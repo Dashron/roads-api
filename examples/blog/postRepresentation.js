@@ -1,11 +1,28 @@
-const Representation = require('roads-representation');
+"use strict";
 
-module.exports = new Representation(({
-    models,
-    auth
-}) => {
+const Representation = require('../../index.js').Representation;
+
+let postRepresentation = module.exports = new Representation((models, auth) => {
+    models;
+    auth;
+
     return {
-        responseBody: '', 
+        responseBody: {
+            name: "Hi!"
+        }, 
         responseHeaders: {}
-    }
+    };
 });
+
+postRepresentation.validateEdit = (requestBody) => {
+
+};
+
+postRepresentation.validateReplace = (requestBody) => {
+    return false;
+};
+
+
+postRepresentation.validateCreate = (requestBody) => {
+    
+};
