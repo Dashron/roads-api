@@ -20,8 +20,10 @@
   "dependencies": {
     "accept": "^3.0.2",
     "accepts": "^1.3.4",
+    "ajv": "^5.5.2",
     "auth-header": "^0.3.1",
     "content-type": "^1.0.4",
-    "roads": "^5.0.0-alpha.11"
+    "roads": "^5.0.0-alpha.11",
+    "json-merge-patch": "0.2.3"
   }
 }
