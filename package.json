@@ -23,7 +23,8 @@
     "ajv": "^5.5.2",
     "auth-header": "^0.3.1",
     "content-type": "^1.0.4",
+    "json-merge-patch": "0.2.3",
     "roads": "^5.0.0-alpha.11",
-    "json-merge-patch": "0.2.3"
+    "uri-templates": "^0.2.0"
   }
 }

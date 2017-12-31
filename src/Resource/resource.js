@@ -5,10 +5,10 @@
 // 4. accept input via one of many media types
 // 5. patch media types (configurable)
 
-const representationLocator = require('./representationLocator.js');
 const authParser = require('./authParser.js');
 const contentTypeResolver = require('./contentTypeResolver.js');
 const Response = require('../response.js');
+const Accept = require('accept');
 
 const {
     METHOD_GET,
@@ -29,39 +29,40 @@ const {
 
 
 module.exports = class Resource {
+    // todo: include a "all methods" config, that can be overridden
     constructor ({
         // not sure this default config system works as I want it to, what happens if we only replace one action? I don't think the rest fall through
         methods = {
             [METHOD_GET]: {
-                action: 'add',
-                validSchemes: ['Bearer'],
+                action: 'get',
+                validSchemes: [],
                 representations: null, //= require('postRepresentation.js'),
                 authRequired: true
             },
             [METHOD_PUT]: {
                 action: 'replace',
                 validation: 'validateReplace',
-                validSchemes: ['Bearer'],
+                validSchemes: [],
                 representations: null, //= require('postRepresentation.js'),
                 authRequired: true
             },
             [METHOD_POST]: {
                 action: 'append',
                 validation: 'validateCreate',
-                validSchemes: ['Bearer'],
+                validSchemes: [],
                 representations: null, //= require('postRepresentation.js'),
                 authRequired: true
             },
             [METHOD_PATCH]: {
                 action: 'edit',
                 validation: 'validateEdit',
-                validSchemes: ['Bearer'],
+                validSchemes: [],
                 representations: null, //= require('postRepresentation.js'),
                 authRequired: true
             },
             [METHOD_DELETE]: {
                 action: 'delete',
-                validSchemes: ['Bearer'],
+                validSchemes: [],
                 representations: null, //= require('postRepresentation.js'),
                 authRequired: true
             }
@@ -71,14 +72,7 @@ module.exports = class Resource {
         defaultMediaType = MEDIA_JSON,
         // accepts token and params
         // returns false on auth error must retry, null on no auth, yet accepted
-        authResolvers = {
-            Bearer: function (params) {
-
-            },
-            Basic: function (params) {
-
-            }
-        }
+        authResolvers = {}
     }) {
         this._methods = methods;
         this._defaultMediaType = defaultMediaType;
@@ -128,9 +122,10 @@ module.exports = class Resource {
             /**
              * Perform the HTTP action and get the response status and models (headers are part of the representation)
              */
-            let response = this[this._getMethodConfig(method)](requestAuth, requestBody, models, requestedRepresentation);
+            let response = this[this._getMethodConfig(method).action](requestAuth, requestBody, models, requestedRepresentation);
 
             // Force the methods to return response objects
+            // todo: this might not be what we want? Ideally this isn't handled by end users
             if (!(response instanceof Response)) {
                 throw new TypeError('Resource functions must return a Response object');
             }
@@ -146,14 +141,16 @@ module.exports = class Resource {
      * Ensure that the client has permission to perform this action.
      */
     _getAuth(authorizationHeader, authRequired, validSchemes) {
+        let auth = null;
+
         // If this resource requires authentication, we enforce that behavior here
         if (!authorizationHeader) {
             // todo: this probably should be method-specific, not resource specific
             if (!authRequired) {
                 return null;
             }
-            
-            throw new UnauthorizedError(validSchemes[0]);
+
+            throw new UnauthorizedError('Authorization required', validSchemes[0]);
         }
 
         // parse the auth header and validate the format (e.g. parse basic auth into username & password)
@@ -162,7 +159,23 @@ module.exports = class Resource {
             parameters
         } = authParser(authorizationHeader, validSchemes);
 
-        return this.authResolvers[scheme](parameters);
+        if (this._authResolvers[scheme]) {
+            auth = this._authResolvers[scheme](parameters);
+            
+            // If we have auth details, return it
+            if (auth !== null) {
+                return auth;
+            }
+
+            // If we have no auth, and it's not required, return null
+            if (!authRequired) {
+                return null;
+            }
+
+            // if we have no auth and it's required, we fall through to the UnauthorizedError
+        }
+
+        throw new UnauthorizedError('Unsupported authorization scheme', validSchemes[0]);
     }
 
     /**
@@ -173,12 +186,19 @@ module.exports = class Resource {
         /**
          * Ensure that we have a representation for this action
          */
-        let representation = representationLocator(acceptHeader, representations, this._defaultMediaType);
-        if (representation === false) {
-            throw new NotAcceptableError();
+        if (acceptHeader) {
+            let contentTypes = Accept.charset(acceptHeader, Object.keys(representations));
+            
+            if (contentTypes) {
+                return representations[contentTypes[0]];
+            }
         }
-
-        return representation;
+    
+        if (this._defaultMediaType) {
+            return representations[this._defaultMediaType];
+        }
+    
+        throw new NotAcceptableError('No acceptable media types for this resource');
     }
 
     /**
@@ -213,12 +233,11 @@ module.exports = class Resource {
      * @param {*} e 
      */
     _buildErrorResponse(e) {
-        console.log(e);
-
         if (e instanceof HTTPError) {
             return e.toResponse();
         }
 
+        console.log(e);
         return new Response(500);
     }
 };

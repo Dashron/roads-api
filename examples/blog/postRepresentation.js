@@ -9,14 +9,12 @@ var ajv = new Ajv({ // todo: this ajv config should be somewhere else
 });
 
 let postRepresentation = module.exports = new Representation((models, auth) => {
-    models;
-    auth;
+    let postModel = models.primaryResource;
 
     return {
-        responseBody: {
-            name: "Hi!"
-        }, 
-        responseHeaders: {}
+        id: postModel.id,
+        title: postModel.title,
+        post: postModel.post
     };
 });
 

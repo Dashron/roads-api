@@ -1,19 +1,26 @@
 "use strict";
 
 const Authorization = require('auth-header');
+
+const {
+    AUTH_BASIC,
+    AUTH_BEARER,
+    AUTH_MAC
+} = require('../constants.js');
+
 const {
     UnauthorizedError
 } = require('../httpErrors.js');
 
 const schemeParser = {
-    basic: (token) => {
+    [AUTH_BASIC]: (token) => {
         let username = null;
         let password = null;
 
         try {
             [username, password] = Buffer(token, 'base64').toString().split(':', 2);
         } catch (e) {
-            throw new UnauthorizedError('basic');
+            throw new UnauthorizedError('Invalid basic authorization syntax', AUTH_BASIC);
         }
         
         return {
@@ -21,12 +28,12 @@ const schemeParser = {
             password: password
         };
     },
-    bearer: (token) => {
+    [AUTH_BEARER]: (token) => {
         return token;
-    },
-    mac: (token) => {
-        throw new UnauthorizedError('mac');
-    }
+    }/*,
+    [AUTH_MAC]: (token) => {
+        todo
+    }*/
 };
 
 /**
@@ -43,7 +50,7 @@ function authParser (authHeader, validSchemes) {
         };
     }
 
-    throw new UnauthorizedError(validSchemes[0]);
+    throw new UnauthorizedError('Unsupported authorization scheme: ' + scheme, validSchemes[0]);
 }
 
 
