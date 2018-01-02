@@ -13,14 +13,14 @@ let posts = {
     2: new Post (2, "hello", "the body"),
     3: new Post (3, "hello", "the body"),
     4: new Post (4, "hello", "the body"),
-    5: new Post (5, "hello", "the body"),
+    12345: new Post (12345, "hello", "the body")
 };
 
 
 module.exports = {
     get: (id) => {
         if (posts[id]) {
-            return posts;
+            return posts[id];
         }
 
         return null;

@@ -1,6 +1,6 @@
 "use strict";
 
-const Representation = require('../../index.js').Representation;
+const Representation = require('../../../index.js').Representation;
 var Ajv = require('ajv');
 var ajv = new Ajv({ // todo: this ajv config should be somewhere else
     allErrors: true,
@@ -8,8 +8,8 @@ var ajv = new Ajv({ // todo: this ajv config should be somewhere else
     removeAdditional: "all" // remove parameters in the request body that are not in the schema. should we error instead? probably, but not sure how to make that work.
 });
 
-let postRepresentation = module.exports = new Representation((models, auth) => {
-    let postModel = models.primaryResource;
+let postRepresentation = module.exports = new Representation((model, auth) => {
+    let postModel = model;
 
     return {
         id: postModel.id,

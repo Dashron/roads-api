@@ -24,80 +24,43 @@ const {
 const {
     UnauthorizedError,
     NotAcceptableError,
-    HTTPError
+    HTTPError,
+    NotFoundError
 } = require('../httpErrors.js');
-
 
 module.exports = class Resource {
     // todo: include a "all methods" config, that can be overridden
-    constructor ({
-        // not sure this default config system works as I want it to, what happens if we only replace one action? I don't think the rest fall through
-        methods = {
-            [METHOD_GET]: {
-                action: 'get',
-                validSchemes: [],
-                representations: null, //= require('postRepresentation.js'),
-                authRequired: true
-            },
-            [METHOD_PUT]: {
-                action: 'replace',
-                validation: 'validateReplace',
-                validSchemes: [],
-                representations: null, //= require('postRepresentation.js'),
-                authRequired: true
-            },
-            [METHOD_POST]: {
-                action: 'append',
-                validation: 'validateCreate',
-                validSchemes: [],
-                representations: null, //= require('postRepresentation.js'),
-                authRequired: true
-            },
-            [METHOD_PATCH]: {
-                action: 'edit',
-                validation: 'validateEdit',
-                validSchemes: [],
-                representations: null, //= require('postRepresentation.js'),
-                authRequired: true
-            },
-            [METHOD_DELETE]: {
-                action: 'delete',
-                validSchemes: [],
-                representations: null, //= require('postRepresentation.js'),
-                authRequired: true
-            }
-        },
-        // try to standardize on one properties format that can be applied to many different media types
-        // I should be able to have a toHAL and toSiren system
-        defaultMediaType = MEDIA_JSON,
-        // accepts token and params
-        // returns false on auth error must retry, null on no auth, yet accepted
-        authResolvers = {}
-    }) {
-        this._methods = methods;
-        this._defaultMediaType = defaultMediaType;
-        this._authResolvers = authResolvers;
+    constructor (configDefaults) {
+        this._methods = {};
+        this._defaultMediaType = {};
+        this._authResolvers = {};
+        this._configDefaults = configDefaults;
+    }
+
+    setMethod (method, config) {
+        this._methods[method] = config;
+    }
+
+    setDefaultMediaType (type) {
+        this._defaultMediaType = type;
+    }
+
+    setAuthResolver(scheme, resolver) {
+        this._authResolvers[scheme] = resolver;
     }
 
     /**
      * 
      * @param {*} method 
-     */
-    _getMethodConfig (method) {
-        return this._methods[method];
-    }
-
-    /**
-     * 
-     * @param {*} method 
-     * @param {*} uri 
+     * @param URL url this should be the standard URL object. If there are
      * @param {*} body 
      * @param {*} headers 
      */
-    async resolve (method, uri, requestBody, requestHeaders) {
+    async resolve (method, url, requestBody, requestHeaders) {
         try {
-            let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], this._getMethodConfig(method).authRequired, this._getMethodConfig(method).validSchemes);
-            let requestedRepresentation = this._getRepresentation(requestHeaders.accept, this._getMethodConfig(method).representations);
+            //let uriParams = this._getURIParams(uri);
+            let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], this._getMethodConfig(method, 'authRequired'), this._getMethodConfig(method, 'validAuthSchemes'));
+            let requestedRepresentation = this._getRepresentation(requestHeaders.accept, this._getMethodConfig(method, 'representations'));
 
             /*
              * Retrieve && validate the request body
@@ -105,10 +68,10 @@ module.exports = class Resource {
             switch (method) {
                 case METHOD_PUT:
                 case METHOD_PATCH:
-                    requestBody = this._getRequestBody(requestHeaders[HEADER_CONTENT_TYPE], requestBody, requestedRepresentation[this._getMethodConfig(method).validation]);
+                    requestBody = this._getRequestBody(requestHeaders[HEADER_CONTENT_TYPE], requestBody, requestedRepresentation[this._getMethodConfig(method, 'validation')]);
                     break;
                 case METHOD_POST:
-                    requestBody = this._getRequestBody(requestHeaders[HEADER_CONTENT_TYPE], requestBody, this[this._getMethodConfig(method).validation]);
+                    requestBody = this._getRequestBody(requestHeaders[HEADER_CONTENT_TYPE], requestBody, this[this._getMethodConfig(method, 'validation')]);
                     break;
                 case METHOD_DELETE:
                 case METHOD_GET:
@@ -117,12 +80,12 @@ module.exports = class Resource {
                     break;
             }
             
-            let models = this._getModels(uri, method);
+            let models = this._getModels(url, method);
 
             /**
              * Perform the HTTP action and get the response status and models (headers are part of the representation)
              */
-            let response = this[this._getMethodConfig(method).action](requestAuth, requestBody, models, requestedRepresentation);
+            let response = this._getMethodConfig(method, 'action')(requestAuth, requestBody, models, requestedRepresentation);
 
             // Force the methods to return response objects
             // todo: this might not be what we want? Ideally this isn't handled by end users
@@ -135,6 +98,47 @@ module.exports = class Resource {
         } catch (e) {
             return this._buildErrorResponse(e);
         }
+    }
+
+    /**
+     * 
+     * @param {*} method 
+     */
+    _getMethodConfig (method, field) {
+        if (typeof(this._methods[method][field]) !== "undefined") {
+            return this._methods[method][field];
+        }
+
+        if (this._configDefaults[field]) {
+            return this._configDefaults[field];
+        }
+
+        throw new Error(this.className + ' has attempted to access a missing config value for the method ' + 
+            method + ' and the field ' + field + '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addMethod.');
+    }
+
+    _get (auth, body, models, selectedRepresentation) {
+        return new Response(200, selectedRepresentation.render(models, auth));
+    }
+
+    _replace (auth, body, models, selectedRepresentation) {
+        selectedRepresentation.replace(models, body);
+        return new Response(200, selectedRepresentation.render(models, auth));
+    }
+
+    _append (auth, body, models, selectedRepresentation) {
+        selectedRepresentation.append(body);
+        return new Response(201, selectedRepresentation.render(models, auth));
+    }
+
+    _edit (auth, body, models, selectedRepresentation) {
+        selectedRepresentation.edit(models, body);
+        return new Response(200, selectedRepresentation.render(models, auth));
+    }
+
+    _delete (auth, body, models, selectedRepresentation) {
+        selectedRepresentation.delete(models);
+        return new Response(204, selectedRepresentation.render(models, auth));
     }
 
     /**
@@ -221,11 +225,11 @@ module.exports = class Resource {
 
     /**
      * 
-     * @param {*} uri 
+     * @param {*} url 
      * @param {*} method 
      */
-    _getModels(uri, method) {
-        return {};
+    _getModels(url, method) {
+        return this.modelsResolver(url.urlParams, url.parsedUrl.searchParams, method, url.parsedUrl.pathname);
     }
 
     /**
