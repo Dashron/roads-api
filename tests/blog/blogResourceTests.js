@@ -15,7 +15,7 @@ function testDetails (method, url, body, headers, expectedResponse) {
     return {
         method: method,
         url: url,
-        body: body,
+        body: JSON.stringify(body),
         headers: headers,
         expectedResponse: expectedResponse
     };
@@ -37,13 +37,15 @@ let runTests = function (tests) {
     let testPromises = [];
 
     tests.forEach((test, index) => {
+        console.log('test ' + index + ' starting\n');
         testPromises.push(postResource.resolve(test.method, test.url, test.body, test.headers)
         .then((response) => {
-            console.log('test ' + index + ' complete', 
+            console.log('test ' + index + ' complete\n', 
                 'expected response', 
                 test.expectedResponse, 
-                'response', 
-                response
+                '\nactual', 
+                response,
+                '\n'
             );
         }));
     });
@@ -57,32 +59,47 @@ let post12345 = buildUrlObject('/posts/12345', {
 
 runTests([
     // GET resource
-    testDetails('GET', post12345, null, {
+    testDetails('GET', post12345, undefined, {
         Authorization: 'Bearer abcde'
-    }, {}),
+    }, {
+        status: 200,
+        body: { id: 12345, title: 'hello', post: "the body" },
+        headers: {} 
+    }),
     // todo: find a replace action
 
     // Edit resource
     testDetails('PATCH', post12345, {
         title: "new edited title"
     }, {
-        "Content-Type": "application/merge-patch+json"
+        "Content-Type": "application/merge-patch+json",
+        Authorization: 'Bearer abcde'
+    }, {
+        status: 200,
+        body: { id: 12345, title: 'new edited title', post: "the body" },
+        headers: {} 
     }),
 
-    // Invalid edit
-    testDetails('PATCH', post12345, JSON.stringify({
+    // Invalid edit. Note, this is not currently working because the json schema we use
+    // will not error on, or exclude unexpected fields
+    testDetails('PATCH', post12345, {
         title: "New Name", 
         id: 5, 
         post:"New post contents"
-    }), {
-        "Content-Type": "application/json"
+    }, {
+        "Content-Type": "application/merge-patch+json",
+        Authorization: 'Bearer abcde'
+    }, {
+        status: 400,
+        body: { },
+        headers: {} 
     }),
 
     // Delete resource
-    testDetails('DELETE', post12345, JSON.stringify({
+    testDetails('POST', post12345, {
         title: "New Name", 
-        post:"New post contents"
-    }), {
+        post:"Even post contents"
+    }, {
         "Content-Type": "application/json"
     })
 ]);

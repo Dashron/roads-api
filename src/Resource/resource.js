@@ -9,6 +9,7 @@ const authParser = require('./authParser.js');
 const contentTypeResolver = require('./contentTypeResolver.js');
 const Response = require('../response.js');
 const Accept = require('accept');
+const getValidator = require('./validator.js');
 
 const {
     METHOD_GET,
@@ -25,11 +26,12 @@ const {
     UnauthorizedError,
     NotAcceptableError,
     HTTPError,
-    NotFoundError
+    NotFoundError,
+    InvalidRequestError
 } = require('../httpErrors.js');
 
 module.exports = class Resource {
-    // todo: include a "all methods" config, that can be overridden
+    // todo: it would be cool if we could expose "expected url parameters" in a way that slots well with the router and raises warnings
     constructor (configDefaults) {
         this._methods = {};
         this._defaultMediaType = {};
@@ -37,7 +39,7 @@ module.exports = class Resource {
         this._configDefaults = configDefaults;
     }
 
-    setMethod (method, config) {
+    setMethod (method, config = {}) {
         this._methods[method] = config;
     }
 
@@ -58,34 +60,32 @@ module.exports = class Resource {
      */
     async resolve (method, url, requestBody, requestHeaders) {
         try {
-            //let uriParams = this._getURIParams(uri);
             let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], this._getMethodConfig(method, 'authRequired'), this._getMethodConfig(method, 'validAuthSchemes'));
             let requestedRepresentation = this._getRepresentation(requestHeaders.accept, this._getMethodConfig(method, 'representations'));
 
             /*
-             * Retrieve && validate the request body
+             * Retrieve & validate the request body
              */
-            switch (method) {
-                case METHOD_PUT:
-                case METHOD_PATCH:
-                    requestBody = this._getRequestBody(requestHeaders[HEADER_CONTENT_TYPE], requestBody, requestedRepresentation[this._getMethodConfig(method, 'validation')]);
-                    break;
-                case METHOD_POST:
-                    requestBody = this._getRequestBody(requestHeaders[HEADER_CONTENT_TYPE], requestBody, this[this._getMethodConfig(method, 'validation')]);
-                    break;
-                case METHOD_DELETE:
-                case METHOD_GET:
-                    // Todo: this isn't valid to the spec
-                    requestBody = null;
-                    break;
+            let contentType = requestHeaders[HEADER_CONTENT_TYPE] || this._defaultMediaType;
+
+            if (contentType && requestBody) {
+                let parsedContentType = contentTypeResolver.parseHeader(contentType);
+                requestBody = this._parseRequestBody(parsedContentType, requestBody);
+                console.log('typeof', typeof(requestBody));
+                
+                if (!this._validateRequestBody(requestBody, method, parsedContentType, requestedRepresentation)) {
+                    requestBody = undefined;
+                }
+            } else {
+                requestBody = undefined;
             }
             
             let models = this._getModels(url, method);
 
             /**
-             * Perform the HTTP action and get the response status and models (headers are part of the representation)
+             * Perform the HTTP action and get the response
              */
-            let response = this._getMethodConfig(method, 'action')(requestAuth, requestBody, models, requestedRepresentation);
+            let response = await this._executeAction(method, requestAuth, requestBody, models, requestedRepresentation);
 
             // Force the methods to return response objects
             // todo: this might not be what we want? Ideally this isn't handled by end users
@@ -109,35 +109,58 @@ module.exports = class Resource {
             return this._methods[method][field];
         }
 
+        // client configurable global defaults across all methods
         if (this._configDefaults[field]) {
             return this._configDefaults[field];
+        }
+        
+        // roads-api default method actions, can be overridden in each method config
+        if (field === 'action') {
+            switch (method) {
+                case METHOD_GET:
+                    return '_get';
+                case METHOD_POST:
+                    // todo: offer an easy "submit" option
+                    return '_append';
+                case METHOD_PUT:
+                    return '_replace';
+                case METHOD_PATCH:
+                    return '_edit';
+                case METHOD_DELETE:
+                    return '_delete';
+            }
+        }
+
+        // default to no schema, which means any request body will fail
+        if (field == 'schema') {
+            return null;
         }
 
         throw new Error(this.className + ' has attempted to access a missing config value for the method ' + 
             method + ' and the field ' + field + '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addMethod.');
     }
 
-    _get (auth, body, models, selectedRepresentation) {
+    async _get (auth, body, models, selectedRepresentation) {
         return new Response(200, selectedRepresentation.render(models, auth));
     }
 
-    _replace (auth, body, models, selectedRepresentation) {
-        selectedRepresentation.replace(models, body);
+    async _replace (auth, body, models, selectedRepresentation) {
+        await selectedRepresentation.replace(models, body);
         return new Response(200, selectedRepresentation.render(models, auth));
     }
 
-    _append (auth, body, models, selectedRepresentation) {
-        selectedRepresentation.append(body);
+    async _append (auth, body, models, selectedRepresentation) {
+        await selectedRepresentation.append(body);
         return new Response(201, selectedRepresentation.render(models, auth));
     }
 
-    _edit (auth, body, models, selectedRepresentation) {
-        selectedRepresentation.edit(models, body);
+    async _edit (auth, body, models, selectedRepresentation) {
+        await selectedRepresentation.edit(models, body);
         return new Response(200, selectedRepresentation.render(models, auth));
     }
 
-    _delete (auth, body, models, selectedRepresentation) {
-        selectedRepresentation.delete(models);
+    async _delete (auth, body, models, selectedRepresentation) {
+        await selectedRepresentation.delete(models);
         return new Response(204, selectedRepresentation.render(models, auth));
     }
 
@@ -210,17 +233,47 @@ module.exports = class Resource {
      * @param {*} contentType 
      * @param {*} requestBody 
      */
-    _getRequestBody(contentType, requestBody, validator) {
+    _parseRequestBody(parsedContentType, requestBody) {
         /**
          * Ensure that we have all the information we need to understand the request body
          */
-        if (!(requestBody && contentType && validator)) {
-            requestBody = undefined;
+        if (!(parsedContentType && requestBody)) {
+            return undefined;
         }
         
-        let parsedContentType = contentTypeResolver.parseHeader(contentType);
-        requestBody = contentTypeResolver.parse(requestBody, parsedContentType.type);
-        return validator(requestBody);
+        return contentTypeResolver.parseBody(requestBody, parsedContentType);
+    }
+
+    /**
+     * 
+     * @param {*} requestBody 
+     * @param {*} method 
+     * @param {*} parsedContentType 
+     * @param {*} representation 
+     */
+    _validateQuery(url, method, parsedContentType, representation) {
+        //return representation[this._getMethodConfig(method, 'action')](parsedContentType, url);
+        // todo
+        return false;
+    }
+
+    /**
+     * 
+     * @param {*} requestBody 
+     * @param {*} method 
+     * @param {*} parsedContentType 
+     * @param {*} representation 
+     */
+    _validateRequestBody(requestBody, method, parsedContentType, representation) {
+        let schema = representation[this._getMethodConfig(method, 'schema')];
+        let validator = getValidator(parsedContentType.type);
+
+        if (!(schema && validator)) {
+            throw new InvalidRequestError('This action does not accept request bodies');
+        }
+
+        
+        return validator(requestBody, schema);
     }
 
     /**
@@ -230,6 +283,18 @@ module.exports = class Resource {
      */
     _getModels(url, method) {
         return this.modelsResolver(url.urlParams, url.parsedUrl.searchParams, method, url.parsedUrl.pathname);
+    }
+
+    /**
+     * 
+     * @param {*} method 
+     * @param {*} requestAuth 
+     * @param {*} requestBody 
+     * @param {*} models 
+     * @param {*} requestedRepresentation 
+     */
+    _executeAction(method, requestAuth, requestBody, models, requestedRepresentation) {
+        return this[this._getMethodConfig(method, 'action')](requestAuth, requestBody, models, requestedRepresentation);
     }
 
     /**

@@ -11,9 +11,10 @@ const {
     InvalidParameterError
 } = require('../httpErrors.js');
 
+//const jsonParse = (body) => JSON.parse(body);
 const parsers = {
     [MEDIA_JSON_MERGE]: JSON.parse,
-    [MEDIA_JSON]: JSON.parse
+    [MEDIA_JSON]: JSON.parse,
 };
 
 /**
@@ -29,11 +30,13 @@ module.exports.parseHeader = (contentTypeHeader) => {
  * @param {*} contentType 
  * @param {*} requestBody 
  */
-module.exports.parseBody = (contentType, requestBody) => {
+module.exports.parseBody = (requestBody, parsedContentType) => {
     // todo: does defaults do this for us now?
     if (typeof(requestBody) !== "string") {
-        throw new InvalidParameterError('Content type resolver\'s parseBody function only supports strings for the requestBody parameter');
+        throw new TypeError('Content type resolver\'s parseBody function only supports strings for the requestBody parameter');
     }
+
+    let contentType = parsedContentType.type;
 
     if (this.isAllowed(contentType)) {
         return parsers[contentType](requestBody);

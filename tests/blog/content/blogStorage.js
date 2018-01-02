@@ -1,10 +1,14 @@
 "use strict";
 
 let Post = class Post {
-    constructor(id, title, body) {
+    constructor(id, title, post) {
         this.id = id;
         this.title = title;
-        this.body = body;
+        this.post = post;
+    }
+
+    save() {
+        
     }
 };
 

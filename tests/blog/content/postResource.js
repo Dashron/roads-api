@@ -16,7 +16,7 @@ const {
 
 const {
     NotFoundError
-} = require('../../../index.js').httpErrors;
+} = require('../../../index.js').HTTPErrors;
 
 let posts = require('./blogStorage.js');
 
@@ -30,27 +30,22 @@ module.exports = class PostResource extends Resource {
             authRequired: true
         });
         
-        this.setMethod(METHOD_GET, {
-            action: this._get,
+        this.setMethod(METHOD_GET);
+
+        this.setMethod(METHOD_PATCH, {
+            // todo: this can be automated away
+            schema: 'editSchema'
         });
-        
+
         this.setMethod(METHOD_PUT, {
-            action: this._replace,
             validation: this._validateReplace
         });
-        
+
         this.setMethod(METHOD_POST, {
-            action: this._append,
             validation: this._validateCreate
         });
         
-        this.setMethod(METHOD_PATCH, {
-            action: this._edit,
-            validation: this._validateEdit
-        });
-        
         this.setMethod(METHOD_DELETE, {
-            action: this._delete,
             validAuthSchemes: [AUTH_BEARER]
         });
         
@@ -72,9 +67,4 @@ module.exports = class PostResource extends Resource {
 
         throw new NotFoundError();
     }
-
-    // validate a submission schema
-    validateSubmit (requestBody) {
-
-    }
-}
+};

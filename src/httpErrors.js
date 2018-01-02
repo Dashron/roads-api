@@ -77,5 +77,12 @@ module.exports = {
             super(message);
             this.status = 404;
         }
-    }
+    },
+    // 400
+    InvalidRequestError: class InvalidRequestError extends HTTPError {
+        constructor (message) {
+            super(message);
+            this.status = 400;
+        }
+    },
 };
