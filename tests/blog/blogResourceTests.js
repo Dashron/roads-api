@@ -93,7 +93,7 @@ runTests([
         status: 400,
         body: { title: 'Invalid request body', status: 400 },
         headers: {} 
-    }),
+    })/*,
 
     // Delete resource
     testDetails('POST', post12345, {
@@ -101,5 +101,5 @@ runTests([
         post:"Even post contents"
     }, {
         "Content-Type": "application/json"
-    })
+    })*/
 ]);

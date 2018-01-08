@@ -1,22 +1,13 @@
 "use strict";
 
-const {
-    Resource
-} = require('../../../index.js');
+const { Resource } = require('../../../index.js');
+const { NotFoundError } = require('../../../index.js').HTTPErrors;
 
 const {
-    METHOD_GET,
-    METHOD_PUT,
-    METHOD_POST,
-    METHOD_PATCH,
-    METHOD_DELETE,
+    METHOD_GET, METHOD_PUT, METHOD_POST, METHOD_PATCH, METHOD_DELETE,
     MEDIA_JSON,
     AUTH_BEARER,
 } = require('../../../index.js').CONSTANTS;
-
-const {
-    NotFoundError
-} = require('../../../index.js').HTTPErrors;
 
 let posts = require('./blogStorage.js');
 
@@ -30,23 +21,12 @@ module.exports = class PostResource extends Resource {
             authRequired: true
         });
         
-        this.setMethod(METHOD_GET);
-
-        this.setMethod(METHOD_PATCH, {
-            // todo: this can be automated away
-            schema: 'editSchema'
-        });
-
-        this.setMethod(METHOD_PUT, {
-            //validation: this._validateReplace
-        });
-
-        this.setMethod(METHOD_POST, {
-            //validation: this._validateCreate
-        });
-        
-        this.setMethod(METHOD_DELETE, {
-            //validAuthSchemes: [AUTH_BEARER]
+        this.setMethods({
+            [METHOD_GET]: {},
+            [METHOD_PATCH]: {},
+            [METHOD_PUT]: {},
+            [METHOD_POST]: {},
+            [METHOD_DELETE]: {}
         });
         
         // try to standardize on one properties format that can be applied to many different media types

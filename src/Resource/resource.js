@@ -9,7 +9,6 @@ const authParser = require('./authParser.js');
 const contentTypeResolver = require('./contentTypeResolver.js');
 const Response = require('../response.js');
 const Accept = require('accept');
-const getValidator = require('./validator.js');
 
 const {
     METHOD_GET,
@@ -19,7 +18,9 @@ const {
     METHOD_DELETE,
     HEADER_CONTENT_TYPE,
     HEADER_AUTHORIZATION,
-    MEDIA_JSON
+    MEDIA_JSON,
+    VALIDATOR_MODE_EDIT,
+    VALIDATOR_MODE_READ
 } = require('../constants.js');
 
 const {
@@ -41,6 +42,12 @@ module.exports = class Resource {
 
     setMethod (method, config = {}) {
         this._methods[method] = config;
+    }
+
+    setMethods (config) {
+        for (let method in config) {
+            this.setMethod(method, config[method]);
+        }
     }
 
     setDefaultMediaType (type) {
@@ -68,18 +75,15 @@ module.exports = class Resource {
              */
             let contentType = requestHeaders[HEADER_CONTENT_TYPE] || this._defaultMediaType;
 
-            if (contentType && requestBody) {
-                let parsedContentType = contentTypeResolver.parseHeader(contentType);
-                requestBody = this._parseRequestBody(parsedContentType, requestBody);
-                console.log('typeof', typeof(requestBody));
-                
-                if (!this._validateRequestBody(requestBody, method, parsedContentType, requestedRepresentation)) {
-                    requestBody = undefined;
-                }
-            } else {
+            if (! (contentType && requestBody)) {
                 requestBody = undefined;
             }
-            
+
+            let parsedContentType = contentTypeResolver.parseHeader(contentType);
+            let contentRepresentation = this._getRepresentation(parsedContentType.type, this._getMethodConfig(method, 'representations'));
+            requestBody = this._parseRequestBody(parsedContentType, requestBody);
+            requestBody = await this._validateRequestBody(requestBody, contentRepresentation, requestAuth);
+
             let models = this._getModels(url, method);
 
             /**
@@ -132,7 +136,8 @@ module.exports = class Resource {
         }
 
         // default to no schema, which means any request body will fail
-        if (field == 'schema') {
+        // TODO: We need a way to validate schemas when you construct your resource
+        if (field === 'schema') {
             return null;
         }
 
@@ -145,7 +150,12 @@ module.exports = class Resource {
     }
 
     async _replace (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.replace(models, body);
+        await selectedRepresentation.saveRepresentation(models, body);
+        return new Response(200, selectedRepresentation.render(models, auth));
+    }
+
+    async _edit (auth, body, models, selectedRepresentation) {
+        await selectedRepresentation.saveRepresentation(models, body);
         return new Response(200, selectedRepresentation.render(models, auth));
     }
 
@@ -154,10 +164,11 @@ module.exports = class Resource {
         return new Response(201, selectedRepresentation.render(models, auth));
     }
 
-    async _edit (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.edit(models, body);
+    // reserved for arbitrary POST submissions
+    /*async _submit (auth, body, models, selectedRepresentation) {
+        await selectedRepresentation.submit(body);
         return new Response(200, selectedRepresentation.render(models, auth));
-    }
+    }*/
 
     async _delete (auth, body, models, selectedRepresentation) {
         await selectedRepresentation.delete(models);
@@ -245,6 +256,7 @@ module.exports = class Resource {
     }
 
     /**
+     * TODO: We need a resource validation system for query parameter validation
      * 
      * @param {*} requestBody 
      * @param {*} method 
@@ -264,19 +276,12 @@ module.exports = class Resource {
      * @param {*} parsedContentType 
      * @param {*} representation 
      */
-    _validateRequestBody(requestBody, method, parsedContentType, representation) {
+    _validateRequestBody(requestBody, representation, auth) {
         if (typeof(requestBody) === 'undefined') {
             return undefined;
         }
 
-        let schema = representation[this._getMethodConfig(method, 'schema')];
-        let validator = getValidator(parsedContentType.type);
-
-        if (!(schema && validator)) {
-            throw new InvalidRequestError('This action does not accept request bodies');
-        }
-
-        return validator(requestBody, schema);
+        return representation.validateInput(requestBody, auth);
     }
 
     /**
