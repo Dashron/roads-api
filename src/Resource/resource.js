@@ -265,6 +265,10 @@ module.exports = class Resource {
      * @param {*} representation 
      */
     _validateRequestBody(requestBody, method, parsedContentType, representation) {
+        if (typeof(requestBody) === 'undefined') {
+            return undefined;
+        }
+
         let schema = representation[this._getMethodConfig(method, 'schema')];
         let validator = getValidator(parsedContentType.type);
 
@@ -272,7 +276,6 @@ module.exports = class Resource {
             throw new InvalidRequestError('This action does not accept request bodies');
         }
 
-        
         return validator(requestBody, schema);
     }
 

@@ -91,7 +91,7 @@ runTests([
         Authorization: 'Bearer abcde'
     }, {
         status: 400,
-        body: { },
+        body: { title: 'Invalid request body', status: 400 },
         headers: {} 
     }),
 

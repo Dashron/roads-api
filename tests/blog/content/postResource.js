@@ -38,15 +38,15 @@ module.exports = class PostResource extends Resource {
         });
 
         this.setMethod(METHOD_PUT, {
-            validation: this._validateReplace
+            //validation: this._validateReplace
         });
 
         this.setMethod(METHOD_POST, {
-            validation: this._validateCreate
+            //validation: this._validateCreate
         });
         
         this.setMethod(METHOD_DELETE, {
-            validAuthSchemes: [AUTH_BEARER]
+            //validAuthSchemes: [AUTH_BEARER]
         });
         
         // try to standardize on one properties format that can be applied to many different media types

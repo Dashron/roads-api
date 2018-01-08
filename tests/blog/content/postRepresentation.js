@@ -11,7 +11,7 @@ let postRepresentation = module.exports = new Representation((model, auth) => {
         post: postModel.post
     };
 });
-
+/*
 postRepresentation.schema = {
     "type": "object",
     "properties": {
@@ -20,25 +20,33 @@ postRepresentation.schema = {
             "readOnly": true // once this is supported in the validator we can use this schema instead of edit
         },
         "title": {
-            "type": "string"
+            "type": "string",
+            "resolver": (models) => {
+                return models.blogPost.title;
+            },
         },
         "post": {
             "type": "string"
         }
     },
     "required": ["id", "title", "post"]
-};
+};*/
 
 postRepresentation.editSchema = {
     "type": "object",
     "properties": {
+        "id": {
+            "type": "number",
+            "blah": "testing" // once this is supported in the validator we can use this schema instead of edit
+        },
         "title": {
             "type": "string"
         },
         "post": {
             "type": "string"
         }
-    }
+    },
+    "additionalProperties": false
 };
 
 postRepresentation.createSchema = postRepresentation.editSchema;

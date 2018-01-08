@@ -5,9 +5,12 @@ const {
     MEDIA_JSON_MERGE
 } = require('../constants.js');
 
-const HTTPError = require('../httpErrors.js').HTTPError;
+const {
+    HTTPError,
+    InvalidRequestError
+} = require('../httpErrors.js');
 
-class ValidationError extends HTTPError {
+class ValidationError extends InvalidRequestError {
     constructor(message, fieldErrors) {
         super(message);
         this.fieldErrors = fieldErrors;
