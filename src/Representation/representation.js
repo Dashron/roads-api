@@ -133,7 +133,7 @@ module.exports.JSONRepresentation = class JSONRepresentation extends Representat
             try {
                 return await compiledSchema(requestBody);
             } catch(errors) {
-                console.log(errors);
+                console.log('validation errors', errors);
                 throw new ValidationError('Invalid request body', errors);
             }
         }
@@ -141,7 +141,7 @@ module.exports.JSONRepresentation = class JSONRepresentation extends Representat
         isValid = compiledSchema(requestBody);
 
         if (!isValid) {
-            console.log(compiledSchema.errors);
+            console.log('validation errors', compiledSchema.errors);
             throw new ValidationError('Invalid request body', compiledSchema.errors);
         }
 
