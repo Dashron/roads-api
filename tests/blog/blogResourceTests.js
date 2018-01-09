@@ -93,13 +93,15 @@ runTests([
         status: 400,
         body: { title: 'Invalid request body', status: 400 },
         headers: {} 
-    })/*,
+    }),
 
     // Delete resource
-    testDetails('POST', post12345, {
-        title: "New Name", 
-        post:"Even post contents"
+    testDetails('DELETE', post12345, undefined, {
+        "Content-Type": "application/json",
+        Authorization: 'Bearer abcde'
     }, {
-        "Content-Type": "application/json"
-    })*/
+        status: 204,
+        body: '',
+        headers: {} 
+    })
 ]);

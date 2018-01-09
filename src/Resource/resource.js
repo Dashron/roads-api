@@ -171,8 +171,8 @@ module.exports = class Resource {
     }*/
 
     async _delete (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.delete(models);
-        return new Response(204, selectedRepresentation.render(models, auth));
+        await selectedRepresentation.deleteRepresentation(models);
+        return new Response(204);
     }
 
     /**

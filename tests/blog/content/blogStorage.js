@@ -10,6 +10,10 @@ let Post = class Post {
     save() {
         
     }
+
+    delete() {
+        
+    }
 };
 
 let newPosts = function () {

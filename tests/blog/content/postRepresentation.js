@@ -42,3 +42,7 @@ postRepresentation.saveRepresentation = function (postModel, requestBody) {
 
     return postModel.save();
 };
+
+postRepresentation.deleteRepresentation = function (postModel) {
+    return postModel.delete();
+}
