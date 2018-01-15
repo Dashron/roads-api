@@ -8,5 +8,5 @@ console.log(testRouter.locateResource('http://api.dashron.com/'));
 console.log(testRouter.locateResource('http://api.dashron.com/posts/12345'));
 
 let testRouter2 = new Router();
-testRouter.addRoute('/posts/{post_id}', resource);
-console.log(testRouter.locateResource('http://api.dashron.com/posts/12345'));
+testRouter2.addRoute('/posts/{post_id}', resource);
+console.log(testRouter2.locateResource('http://api.dashron.com/posts/12345'));
