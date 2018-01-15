@@ -1,6 +1,6 @@
 "use strict";
 
-let PostResource = require('./content/postResource.js');
+let PostResource = require('./data/postResource.js');
 let postResource = new PostResource();
 let {URL} = require('url');
 

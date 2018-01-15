@@ -1,13 +1,13 @@
 "use strict";
 
-const { Resource } = require('../../../index.js');
-const { NotFoundError } = require('../../../index.js').HTTPErrors;
+const { Resource } = require('../../index.js');
+const { NotFoundError } = require('../../index.js').HTTPErrors;
 
 const {
     METHOD_GET, METHOD_PUT, METHOD_POST, METHOD_PATCH, METHOD_DELETE,
     MEDIA_JSON,
     AUTH_BEARER,
-} = require('../../../index.js').CONSTANTS;
+} = require('../../index.js').CONSTANTS;
 
 let posts = require('./blogStorage.js');
 

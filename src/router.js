@@ -25,14 +25,14 @@ module.exports = class Router {
      * @param {*} URI 
      * @throws TypeError if the URI is not a valid URL
      */
-    locateResource(URL) {
-        URL = new URL(URL);
+    locateResource(url) {
+        url = new URL(url);
         let parsedURL = null;
 
-        for(let i = 0; i < this._uriTemplates.length; i++) {
-            parsedURL = this._uriTemplates[i].compiledTemplate.fromURI(URL.pathname);
+        for(let i = 0; i < this._routes.length; i++) {
+            parsedURL = this._routes[i].compiledTemplate.fromUri(url.pathname);
             if (parsedURL) {
-                return this._buildUrlObject(URL, parsedURL);
+                return this._buildUrlObject(url, parsedURL);
             }
         }
 

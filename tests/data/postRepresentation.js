@@ -1,6 +1,6 @@
 "use strict";
 
-const JSONRepresentation = require('../../../index.js').JSONRepresentation;
+const JSONRepresentation = require('../../index.js').JSONRepresentation;
 
 let responseRepresentation = {
     "type": "object",
@@ -40,7 +40,6 @@ let editRepresentation = {
 };
 
 let postRepresentation = module.exports = new JSONRepresentation(responseRepresentation, editRepresentation);
-
 
 
 postRepresentation.saveRepresentation = function (postModel, requestBody) {
