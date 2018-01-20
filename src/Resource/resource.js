@@ -9,6 +9,11 @@ const authParser = require('./authParser.js');
 const contentTypeResolver = require('./contentTypeResolver.js');
 const Response = require('../response.js');
 const Accept = require('accept');
+const validateObj = require('./objectValidator.js');
+const { 
+    URLSearchParams,
+    URL
+} = require('url');
 
 const {
     METHOD_GET,
@@ -38,6 +43,7 @@ module.exports = class Resource {
         this._defaultMediaType = {};
         this._authResolvers = {};
         this._configDefaults = configDefaults;
+        this._searchSchema = {};
     }
 
     setMethod (method, config = {}) {
@@ -48,6 +54,11 @@ module.exports = class Resource {
         for (let method in config) {
             this.setMethod(method, config[method]);
         }
+    }
+
+    setSearchSchema (schema, requiredProperties) {
+        this._searchSchema = schema;
+        this._requiredSearchProperties = requiredProperties;
     }
 
     setDefaultMediaType (type) {
@@ -65,7 +76,11 @@ module.exports = class Resource {
      * @param {*} body 
      * @param {*} headers 
      */
-    async resolve (method, url, requestBody, requestHeaders) {
+    async resolve (method, urlObject, urlParams, requestBody, requestHeaders) {
+        if (!(urlObject instanceof URL)) {
+            throw new Error('You must provide a URL object to the resolve method');
+        }
+
         try {
             let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], this._getMethodConfig(method, 'authRequired'), this._getMethodConfig(method, 'validAuthSchemes'));
             let requestedRepresentation = this._getRepresentation(requestHeaders.accept, this._getMethodConfig(method, 'representations'));
@@ -79,12 +94,9 @@ module.exports = class Resource {
                 requestBody = undefined;
             }
 
-            let parsedContentType = contentTypeResolver.parseHeader(contentType);
-            let contentRepresentation = this._getRepresentation(parsedContentType.type, this._getMethodConfig(method, 'representations'));
-            requestBody = this._parseRequestBody(parsedContentType, requestBody);
-            requestBody = await this._validateRequestBody(requestBody, contentRepresentation, requestAuth);
+            requestBody = await this._validateRequestBody(requestBody, contentType, method, requestAuth);
 
-            let models = this._getModels(url, method);
+            let models = await this._getModels(urlObject, urlParams, method);
 
             /**
              * Perform the HTTP action and get the response
@@ -263,10 +275,34 @@ module.exports = class Resource {
      * @param {*} parsedContentType 
      * @param {*} representation 
      */
-    _validateQuery(url, method, parsedContentType, representation) {
-        //return representation[this._getMethodConfig(method, 'action')](parsedContentType, url);
-        // todo
-        return false;
+    _validateSearchParams(searchParams) {
+        if (typeof(searchParams) === 'undefined') {
+            return undefined;
+        }
+
+        if (searchParams instanceof URLSearchParams) {
+            let params = {};
+        
+            for (let key of searchParams.keys()) {
+                if (params[key]) {
+                    // keys returns dupes if the key is there twice, but getAll will return the data we need below so we don't want keys duplicated
+                    continue;
+                }
+        
+                params[key] = searchParams.getAll(key);
+                if (params[key].length === 1) {
+                    params[key] = params[key][0];
+                }
+            }
+        
+            searchParams = params;
+        }
+
+        if (typeof(searchParams) !== "object") {
+            throw new Error('You must provide an object to the _validateSearchParams');
+        }
+
+        return validateObj(searchParams, this._searchSchema, this._requiredSearchProperties);
     }
 
     /**
@@ -276,12 +312,16 @@ module.exports = class Resource {
      * @param {*} parsedContentType 
      * @param {*} representation 
      */
-    _validateRequestBody(requestBody, representation, auth) {
+    _validateRequestBody(requestBody, contentType, method, auth) {
         if (typeof(requestBody) === 'undefined') {
             return undefined;
         }
+        
+        let parsedContentType = contentTypeResolver.parseHeader(contentType);
+        let contentRepresentation = this._getRepresentation(parsedContentType.type, this._getMethodConfig(method, 'representations'));
+        requestBody = this._parseRequestBody(parsedContentType, requestBody);
 
-        return representation.validateInput(requestBody, auth);
+        return contentRepresentation.validateInput(requestBody, auth);
     }
 
     /**
@@ -289,8 +329,9 @@ module.exports = class Resource {
      * @param {*} url 
      * @param {*} method 
      */
-    _getModels(url, method) {
-        return this.modelsResolver(url.urlParams, url.parsedUrl.searchParams, method, url.parsedUrl.pathname);
+    async _getModels(urlObject, urlParams, method) {
+        await this._validateSearchParams(urlObject.searchParams);
+        return this.modelsResolver(urlParams, urlObject.searchParams, method, urlObject.pathname);
     }
 
     /**

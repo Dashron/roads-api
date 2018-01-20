@@ -4,6 +4,8 @@ const {
     InvalidRequestError
 } = require('../httpErrors.js');
 
+var Ajv = require('ajv');
+
 class ValidationError extends InvalidRequestError {
     constructor(message, fieldErrors) {
         super(message);
@@ -66,7 +68,6 @@ module.exports.JSONRepresentation = class JSONRepresentation extends Representat
     }
 
     async validateInput(requestBody) {
-        var Ajv = require('ajv');
         var ajv = new Ajv({ // todo: this ajv config should be somewhere else
             allErrors: true,
             verbose: true,
@@ -81,7 +82,7 @@ module.exports.JSONRepresentation = class JSONRepresentation extends Representat
             try {
                 return await compiledSchema(requestBody);
             } catch(errors) {
-                console.log('validation errors', errors);
+                //console.log('validation errors', errors);
                 throw new ValidationError('Invalid request body', errors);
             }
         }
@@ -89,7 +90,7 @@ module.exports.JSONRepresentation = class JSONRepresentation extends Representat
         isValid = compiledSchema(requestBody);
 
         if (!isValid) {
-            console.log('validation errors', compiledSchema.errors);
+            //console.log('validation errors', compiledSchema.errors);
             throw new ValidationError('Invalid request body', compiledSchema.errors);
         }
 

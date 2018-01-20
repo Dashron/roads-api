@@ -12,7 +12,7 @@ const {
 let posts = require('./blogStorage.js');
 
 module.exports = class PostResource extends Resource {
-    constructor() {
+    constructor(includeRequired) {
         super({
             validAuthSchemes: [AUTH_BEARER],
             representations: {
@@ -29,6 +29,20 @@ module.exports = class PostResource extends Resource {
             [METHOD_DELETE]: {}
         });
         
+        let requiredProperties = includeRequired ? ["requiredProperty"] : undefined;
+
+        this.setSearchSchema({
+            per_page: {
+                type: "number"
+            },
+            page: {
+                type: "number"
+            },
+            requiredProperty: {
+                type: "boolean"
+            }
+        }, requiredProperties);
+
         // try to standardize on one properties format that can be applied to many different media types
         // I should be able to have a toHAL and toSiren system
         this.setDefaultMediaType(MEDIA_JSON);

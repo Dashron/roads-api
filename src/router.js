@@ -3,11 +3,12 @@
 let {URL} = require('url');
 const URITemplate = require('uri-templates');
 module.exports = class Router {
-    constructor () {
+    constructor (baseUrl) {
         this._routes = [];
+        this._baseUrl = baseUrl;
     }
 
-    addRoute(template, resource, config) {
+    addResource(template, resource, config) {
         this._routes.push({
             compiledTemplate: new URITemplate(template),
             config: config,
@@ -16,7 +17,21 @@ module.exports = class Router {
     }
 
     // todo: roads middleware
-    middleware(method, url, body, headers) {
+    async middleware(method, fullUrl, body, headers) {
+        if (this._baseUrl) {
+            fullUrl = new URL(fullUrl, this._baseUrl);    
+        }
+
+        let {
+                resource,
+                url
+        } = this._locateResource(fullUrl);
+
+        if (!resource) {
+            return;
+        }
+        
+        return await resource.resolve(method, url, body, headers);
 
     }
     
@@ -25,24 +40,28 @@ module.exports = class Router {
      * @param {*} URI 
      * @throws TypeError if the URI is not a valid URL
      */
-    locateResource(url) {
-        url = new URL(url);
-        let parsedURL = null;
+    _locateResource(url) {        
+        if (!(url instanceof URL)) {
+            throw new Error('You must provide a string or URL object to the _locateResource method');
+        }
+
+        let urlParams = null;
 
         for(let i = 0; i < this._routes.length; i++) {
-            parsedURL = this._routes[i].compiledTemplate.fromUri(url.pathname);
-            if (parsedURL) {
-                return this._buildUrlObject(url, parsedURL);
+            urlParams = this._routes[i].compiledTemplate.fromUri(url.pathname);
+
+            if (urlParams === true) {
+                urlParams = {};
+            }
+
+            if (typeof(urlParams) === "object") {
+                return {
+                    resource: this._routes[i].resource,
+                    urlParams: urlParams
+                };
             }
         }
 
         return false;
-    }
-
-    _buildUrlObject(url, urlParams) {
-        return {
-            urlParams: urlParams,
-            parsedUrl: url
-        };
     }
 };

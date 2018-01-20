@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node ./node_modules/nodeunit/bin/nodeunit ./tests/tests/*"
   },
   "repository": {
     "type": "git",
@@ -26,5 +26,8 @@
     "json-merge-patch": "0.2.3",
     "roads": "^5.0.0-alpha.11",
     "uri-templates": "^0.2.0"
+  },
+  "devDependencies": {
+    "nodeunit": "0.11.0"
   }
 }
