@@ -38,6 +38,13 @@ module.exports = class Router {
         this._baseUrl = baseUrl;
     }
 
+    /**
+     * Assign a resource to a URI template for the middleware, or locateResource method to locate in the future
+     * 
+     * @param {*} template 
+     * @param {*} resource 
+     * @param {*} config 
+     */
     addResource(template, resource, config) {
         this._routes.push({
             compiledTemplate: new URITemplate(template),
@@ -55,7 +62,7 @@ module.exports = class Router {
         let {
                 resource,
                 url
-        } = this._locateResource(fullUrl);
+        } = this.locateResource(fullUrl);
 
         if (!resource) {
             return;
@@ -70,7 +77,7 @@ module.exports = class Router {
      * @param {*} URI 
      * @throws TypeError if the URI is not a valid URL
      */
-    async _locateResource(url) {        
+    async locateResource(url) {        
         if (!(url instanceof URL)) {
             throw new Error('You must provide a string or URL object to the _locateResource method');
         }

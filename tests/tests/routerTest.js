@@ -14,14 +14,14 @@ exports['Test hostname only matches root resource'] = function (test) {
     router.addResource('/', resource);
 
     Promise.all([
-        router._locateResource(new URL('http://api.dashron.com'))
+        router.locateResource(new URL('http://api.dashron.com'))
         .then((response) => {
             test.deepEqual(response, {
                 resource: resource,
                 urlParams: {}
             });
         }),
-        router._locateResource(new URL('http://api.dashron.com/'))
+        router.locateResource(new URL('http://api.dashron.com/'))
         .then((response) => {
             test.deepEqual(response, {
                 resource: resource,
@@ -44,7 +44,7 @@ exports['Test hostname only doesnt match a sub resource'] = function (test) {
 
     router.addResource('/', resource);
 
-    test.deepEqual(router._locateResource(new URL('http://api.dashron.com/test')), false);
+    test.deepEqual(router.locateResource(new URL('http://api.dashron.com/test')), false);
     test.done();
 };
 
@@ -63,7 +63,7 @@ exports['Test sub_route with variable is properly expanded'] = function (test) {
         }
     });
 
-    router._locateResource(new URL('http://api.dashron.com/posts/12345'))
+    router.locateResource(new URL('http://api.dashron.com/posts/12345'))
     .then((response) => {
         test.deepEqual(response, {
             resource: resource,
@@ -94,7 +94,7 @@ exports['Test sub_route with invalid parameter fails'] = function (test) {
         }
     });
 
-    router._locateResource(new URL('http://api.dashron.com/posts/abcd'))
+    router.locateResource(new URL('http://api.dashron.com/posts/abcd'))
     .then((response) => {
         test.fail('This method should have failed');
         test.done();
@@ -121,7 +121,7 @@ exports['Test sub_route with missing required parameter fails'] = function (test
         }
     });
 
-    router._locateResource(new URL('http://api.dashron.com/posts/'))
+    router.locateResource(new URL('http://api.dashron.com/posts/'))
     .then((response) => {
         test.fail('This method should have failed');
         test.done();
@@ -148,7 +148,7 @@ exports['Test sub_route with missing optional parameter works'] = function (test
         }
     });
 
-    router._locateResource(new URL('http://api.dashron.com/posts/'))
+    router.locateResource(new URL('http://api.dashron.com/posts/'))
     .then((response) => {
         test.deepEqual(response, {
             resource: resource,
@@ -177,7 +177,7 @@ exports['Test required string sub route fails with empty param'] = function (tes
         }
     });
 
-    router._locateResource(new URL('http://api.dashron.com/posts/'))
+    router.locateResource(new URL('http://api.dashron.com/posts/'))
     .then((response) => {
         test.fail('This method should have failed');
         test.done();
@@ -203,7 +203,7 @@ exports['Test optional string sub route passes with empty param'] = function (te
         }
     });
 
-    router._locateResource(new URL('http://api.dashron.com/posts/'))
+    router.locateResource(new URL('http://api.dashron.com/posts/'))
     .then((response) => {
         test.deepEqual(response, {
             resource: resource,
