@@ -2,15 +2,8 @@
 let Ajv = require('ajv');
 
 const {
-    InvalidRequestError
-} = require('../httpErrors.js');
-
-class ValidationError extends InvalidRequestError {
-    constructor(message, fieldErrors) {
-        super(message);
-        this.fieldErrors = fieldErrors;
-    }
-}
+    InputValidationError
+} = require('./httpErrors.js');
 
 function buildSchema(propertiesSchema, requiredProperties) {
     let schema = {
@@ -48,6 +41,6 @@ module.exports = async function validateObject(obj, propertiesSchema, requiredPr
     try {
         return await compiledSchema(obj);
     } catch(errors) {
-        throw new ValidationError('Invalid search query', errors);
+        throw new InputValidationError('Invalid object', errors);
     }
 }

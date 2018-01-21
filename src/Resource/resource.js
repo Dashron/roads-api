@@ -9,7 +9,7 @@ const authParser = require('./authParser.js');
 const contentTypeResolver = require('./contentTypeResolver.js');
 const Response = require('../response.js');
 const Accept = require('accept');
-const validateObj = require('./objectValidator.js');
+const validateObj = require('../objectValidator.js');
 const { 
     URLSearchParams,
     URL
@@ -33,7 +33,8 @@ const {
     NotAcceptableError,
     HTTPError,
     NotFoundError,
-    InvalidRequestError
+    InvalidRequestError,
+    InputValidationError
 } = require('../httpErrors.js');
 
 module.exports = class Resource {
@@ -275,7 +276,7 @@ module.exports = class Resource {
      * @param {*} parsedContentType 
      * @param {*} representation 
      */
-    _validateSearchParams(searchParams) {
+    async _validateSearchParams(searchParams) {
         if (typeof(searchParams) === 'undefined') {
             return undefined;
         }
@@ -302,7 +303,15 @@ module.exports = class Resource {
             throw new Error('You must provide an object to the _validateSearchParams');
         }
 
-        return validateObj(searchParams, this._searchSchema, this._requiredSearchProperties);
+        try {
+            return await validateObj(searchParams, this._searchSchema, this._requiredSearchProperties);
+        } catch (e) {
+            if (e instanceof InputValidationError) {
+                throw new InputValidationError('Invalid Search Query', e);
+            }
+
+            throw e;
+        }
     }
 
     /**
@@ -329,8 +338,9 @@ module.exports = class Resource {
      * @param {*} url 
      * @param {*} method 
      */
-    async _getModels(urlObject, urlParams, method) {
+    async _getModels(urlObject, urlParams, method) {    
         await this._validateSearchParams(urlObject.searchParams);
+ 
         return this.modelsResolver(urlParams, urlObject.searchParams, method, urlObject.pathname);
     }
 

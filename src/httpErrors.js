@@ -84,5 +84,12 @@ module.exports = {
             super(message);
             this.status = 400;
         }
-    },
+    }
 };
+
+module.exports.InputValidationError = class InputValidationError extends module.exports.InvalidRequestError {
+    constructor(message, fieldErrors) {
+        super(message);
+        this.fieldErrors = fieldErrors;
+    }
+}

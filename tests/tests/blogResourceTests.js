@@ -182,7 +182,7 @@ exports['Test query validation fails on single parameters'] = function (test) {
             "Content-Type": "application/json",
             Authorization: 'Bearer abcde'
         },
-        "Invalid search query",
+        "Invalid Search Query",
         test
     )
     .then(() => {
@@ -203,7 +203,7 @@ exports['Test query validation fails for additional properties'] = function (tes
             "Content-Type": "application/json",
             Authorization: 'Bearer abcde'
         },
-        "Invalid search query",
+        "Invalid Search Query",
         test
     )
     .then(() => {
@@ -249,7 +249,7 @@ exports['Test query validation fails for missing required properties'] = functio
             "Content-Type": "application/json",
             Authorization: 'Bearer abcde'
         },
-        "Invalid search query",
+        "Invalid Search Query",
         test
     )
     .then(() => {
