@@ -84,6 +84,13 @@ module.exports = {
             super(message);
             this.status = 400;
         }
+    },
+
+    UnprocessableEntityError: class UnprocessableEntityError extends HTTPError {
+        constructor (message) {
+            super(message);
+            this.status = 422;
+        }
     }
 };
 

@@ -7,6 +7,7 @@ module.exports = {
 
     HEADER_CONTENT_TYPE: 'Content-Type',
     HEADER_AUTHORIZATION: 'Authorization',
+    HEADER_ACCEPT: 'Accept',
     
     MEDIA_JSON: 'application/json',
     MEDIA_JSON_MERGE: 'application/merge-patch+json', //https://tools.ietf.org/html/rfc7386

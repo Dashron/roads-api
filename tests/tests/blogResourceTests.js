@@ -68,7 +68,6 @@ exports['Test GET Resource execution'] = function (test) {
 
 };
 
-
 exports['Test valid PATCH Resource execution'] = function (test) {
     // Edit resource
     ensureValidRequest(

@@ -41,9 +41,9 @@ module.exports = class Router {
     /**
      * Assign a resource to a URI template for the middleware, or locateResource method to locate in the future
      * 
-     * @param {*} template 
-     * @param {*} resource 
-     * @param {*} config 
+     * @param {*} template URI template
+     * @param {*} resource Resource object
+     * @param {*} config Additional configuration for this route. Currently supports a urlParams object with "schema" and "required" properties. These properties are used alongside the standard objectValidator to validate any URI params.
      */
     addResource(template, resource, config) {
         this._routes.push({
@@ -53,33 +53,42 @@ module.exports = class Router {
         });
     }
 
-    // todo: roads middleware
-    async middleware(method, fullUrl, body, headers) {
-        if (this._baseUrl) {
-            fullUrl = new URL(fullUrl, this._baseUrl);    
+    /**
+     * Roads middleware to receive HTTP requests and return resource representations
+     * 
+     * @param {any} method 
+     * @param {any} fullUrl 
+     * @param {any} body 
+     * @param {any} headers 
+     * @returns 
+     */
+    async middleware(method, requestUrl, body, headers) {
+        if (! (requestUrl instanceof URL)) {
+            requestUrl = new URL(requestUrl, this._baseUrl);
         }
 
         let {
                 resource,
                 url
-        } = this.locateResource(fullUrl);
+        } = this.locateResource(requestUrl);
 
         if (!resource) {
             return;
         }
 
         return await resource.resolve(method, url, body, headers);
-
     }
     
     /**
-     * 
-     * @param {*} URI 
+     * Attempts to locate a resource for the provided url.
+     * @param {*} url a URL object
      * @throws TypeError if the URI is not a valid URL
+     * @throws InputValidationError if we located a matching route, but the urls uri params did not match the url schema
+     * @return An object with two properties. Resource, which is the relevant Resource object for this route. urlParams which is an object containing all the url params and values in url.
      */
     async locateResource(url) {        
         if (!(url instanceof URL)) {
-            throw new Error('You must provide a string or URL object to the _locateResource method');
+            throw new TypeError('You must provide a string or URL object to the _locateResource method');
         }
 
         let urlParams = null;
@@ -98,7 +107,7 @@ module.exports = class Router {
                     await validateObj(urlParams, this._routes[i].config.urlParams.schema, this._routes[i].config.urlParams.required);
                 } catch (e) {
                     if (e instanceof InputValidationError) {
-                        throw new InputValidationError('Invalid Search Query', e);
+                        throw new InputValidationError('Invalid URL Parameters', e);
                     }
         
                     throw e;

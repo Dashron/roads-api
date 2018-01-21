@@ -1,9 +1,17 @@
 "use strict";
 
 const {
-    InvalidRequestError
+    InvalidRequestError,
+    UnprocessableEntityError,
+    UnsupportedMediaTypeError
 } = require('../httpErrors.js');
 
+const {
+    METHOD_PATCH,
+    MEDIA_JSON_MERGE
+} = require('../constants.js');
+
+//let mergePatch = require('json-merge-patch');
 var Ajv = require('ajv');
 
 class ValidationError extends InvalidRequestError {
@@ -20,7 +28,12 @@ let Representation = module.exports.Representation = class Representation {
     }
 
     render (models, auth)  {
-        return this._translator(models, auth)
+        return this._translator(models, auth);
+    }
+
+    parseInput (requestBody, method, auth) {
+        console.log('base obj', requestBody);
+        return requestBody;
     }
 };
 
@@ -96,4 +109,39 @@ module.exports.JSONRepresentation = class JSONRepresentation extends Representat
 
         return requestBody;
     }
+
+    parseInput (requestBody, method, auth, contentType) {
+        if (method === METHOD_PATCH) {
+            /*if (contentType === MEDIA_JSON_MERGE) {
+                parsedBody = JSON.parse(requestBody);
+            } else {
+                throw new UnsupportedMediaTypeError();
+            }*/
+
+            throw new Error('PATCH Currently unsupported. Coming very soon!');
+        }
+
+        let parsedBody = null;
+
+        try {
+            parsedBody = JSON.parse(requestBody);
+        } catch (e) {
+            throw new UnprocessableEntityError('Invalid request body: Could not parse JSON request');
+        }
+
+        return this.validateInput(parsedBody);
+    }
+
+    /*
+    see usage note in resource. We might want to just have special patch representations with add/remove/delete methods
+    applyPatch (contentType, models, patch) {
+        let representation = this.render(models);
+        
+        switch (contentType) {
+            case MEDIA_JSON_MERGE:
+                return mergePatch.apply(representation, patch);
+            default:
+                throw new UnsupportedMediaTypeError();
+        }
+    }*/
 };

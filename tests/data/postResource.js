@@ -5,7 +5,7 @@ const { NotFoundError } = require('../../index.js').HTTPErrors;
 
 const {
     METHOD_GET, METHOD_PUT, METHOD_POST, METHOD_PATCH, METHOD_DELETE,
-    MEDIA_JSON,
+    MEDIA_JSON, MEDIA_JSON_MERGE,
     AUTH_BEARER,
 } = require('../../index.js').CONSTANTS;
 
@@ -16,7 +16,8 @@ module.exports = class PostResource extends Resource {
         super({
             validAuthSchemes: [AUTH_BEARER],
             representations: {
-                [MEDIA_JSON]: require('./postRepresentation.js')
+                [MEDIA_JSON]: require('./postRepresentation.js'),
+                [MEDIA_JSON_MERGE]: require('./postRepresentation.js')
             },
             authRequired: true
         });
