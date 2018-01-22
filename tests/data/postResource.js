@@ -17,7 +17,7 @@ module.exports = class PostResource extends Resource {
             validAuthSchemes: [AUTH_BEARER],
             representations: {
                 [MEDIA_JSON]: require('./postRepresentation.js'),
-                [MEDIA_JSON_MERGE]: require('./postRepresentation.js')
+                //[MEDIA_JSON_MERGE]: require('../../index.js').JSONMergePatchRepresentation
             },
             authRequired: true
         });

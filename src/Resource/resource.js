@@ -142,37 +142,27 @@ module.exports = class Resource {
              */
             let requestRepresentation = this._getRequestRepresentation(requestHeaders[HEADER_CONTENT_TYPE], this._defaultRequestContentType, this._getMethodConfig(method, 'representations'));
             
-            /*
-             * Here's a safe short cut if we want the request to still work even though we
-             * can't locate a proper requestRepresentation. In the current code this might
-             * never happen, but I put it here so I don't forget if we want it in the future
-             */
-            if (!requestRepresentation) {
+            if (requestBody) {
+                requestBody = requestRepresentation.parseInput(requestBody, requestAuth);
+            } else {
+                /*
+                * Here's a safe short cut if we want the request to still work even though we
+                * can't locate a proper requestRepresentation. In the current code this might
+                * never happen, but I put it here so I don't forget if we want it in the future
+                */
                 requestBody = undefined;
             }
-            
+
             /*
-             * If we have a request body, parse and validate it so the action can use it right away.
+             * Initates the validation of the query parameters, and if valid sends those parameters to this resources "modelsResolver" function.
              */
-            if (requestBody !== undefined) {
-                // Use that representation to parse the input into a request body to pass into the action
-                // todo: maybe this should instantiate the representation by passing in the request body? Will that idea work well for edits and replaces?
-                requestBody =  requestRepresentation.parseInput(requestBody, method, requestAuth);
-            }
+            await this._validateSearchParams(urlObject.searchParams);
 
             /*
              * Locte a collection of models for this request. These models are provided to the action, and are not manipulated in any way by this framework.
-             * The API developer should assume that they can do whatever they want with the result of getModels, and assume that
-             * the action and representation will receive those models untouched
+             * The API developer should assume that they can do whatever they want with provided models
              */
-            let models = await this._getModels(urlObject, urlParams, method);
-
-            /*
-            todo: is this the right way, or should we have special patch representations that the edit
-            method can use. I'm leaning that way.
-            if (method === METHOD_PATCH) {
-                requestBody = requestRepresentation.applyPatch(contentType, models, requestBody);
-            }*/
+            let models = await this.modelsResolver(urlParams, urlObject.searchParams, method, urlObject.pathname);
 
             /*
              * Find the appropriate resource representation for this resource, and the client's request
@@ -182,7 +172,7 @@ module.exports = class Resource {
             /**
              * Perform the HTTP action and get the response
              */
-            let response = await this[this._getMethodConfig(method, 'action')](requestAuth, requestBody, models, responseRepresentation);
+            let response = await this[this._getMethodConfig(method, 'action')](models, requestBody, requestRepresentation, requestAuth, responseRepresentation);
 
             /* 
              * Force the methods to return response objects
@@ -246,29 +236,31 @@ module.exports = class Resource {
     /**
      * This is the default "view" action for the HTTP GET method
      * 
-     * @param {any} auth 
-     * @param {any} body 
      * @param {any} models 
-     * @param {any} selectedRepresentation 
+     * @param {any} requestBody
+     * @param {any} requestRepresentation
+     * @param {any} requestAuth 
+     * @param {any} responseRepresentation 
      * @returns 
      */
-    async _get (auth, body, models, selectedRepresentation) {
-        return new Response(200, selectedRepresentation.render(models, auth));
+    async _get (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
+        return new Response(200, responseRepresentation.render(models, requestAuth));
     }
 
     /**
      * This is the default "replace" action for the HTTP PUT method.
      * It will call the target representations "saveRepresentation" method
      * 
-     * @param {any} auth 
-     * @param {any} body 
      * @param {any} models 
-     * @param {any} selectedRepresentation 
+     * @param {any} requestBody
+     * @param {any} requestRepresentation
+     * @param {any} requestAuth 
+     * @param {any} responseRepresentation 
      * @returns 
      */
-    async _replace (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.saveRepresentation(models, body);
-        return new Response(200, selectedRepresentation.render(models, auth));
+    async _replace (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
+        await requestRepresentation.replace(requestBody, models, requestAuth);
+        return new Response(200, responseRepresentation.render(models, requestAuth));
     }
 
     /**
@@ -276,15 +268,16 @@ module.exports = class Resource {
      * It will call the target representations "saveRepresentation" method
      * TODO: Why isn't this using the patchResolver? huh. maybe a bug?
      * 
-     * @param {any} auth 
-     * @param {any} body 
      * @param {any} models 
-     * @param {any} selectedRepresentation 
+     * @param {any} requestBody
+     * @param {any} requestRepresentation
+     * @param {any} requestAuth 
+     * @param {any} responseRepresentation 
      * @returns 
      */
-    async _edit (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.saveRepresentation(models, body);
-        return new Response(200, selectedRepresentation.render(models, auth));
+    async _edit (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
+        await requestRepresentation.edit(requestBody, models, requestAuth);
+        return new Response(200, responseRepresentation.render(models, requestAuth));
     }
 
     /**
@@ -293,15 +286,16 @@ module.exports = class Resource {
      * It should be used if you want to accept a resource representation and 
      * append it on to a collection of resources (e.g. POST /blog/posts)
      * 
-     * @param {any} auth 
-     * @param {any} body 
      * @param {any} models 
-     * @param {any} selectedRepresentation 
+     * @param {any} requestBody
+     * @param {any} requestRepresentation
+     * @param {any} requestAuth 
+     * @param {any} responseRepresentation 
      * @returns 
      */
-    async _append (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.append(body);
-        return new Response(201, selectedRepresentation.render(models, auth));
+    async _append (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
+        await requestRepresentation.append(requestBody, models, requestAuth);
+        return new Response(201, responseRepresentation.render(models, requestAuth));
     }
 
     /**
@@ -309,29 +303,31 @@ module.exports = class Resource {
      * It will call the selectedRepresentations "submit" method.
      * It should be used when you are sending arbitrary JSON data to a resource.
      * 
-     * @param {any} auth 
-     * @param {any} body 
      * @param {any} models 
-     * @param {any} selectedRepresentation 
+     * @param {any} requestBody
+     * @param {any} requestRepresentation
+     * @param {any} requestAuth 
+     * @param {any} responseRepresentation 
      * @returns 
      */
-    async _submit (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.submit(body);
-        return new Response(200, selectedRepresentation.render(models, auth));
+    async _submit (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
+        await requestRepresentation.submit(requestBody, models, requestAuth);
+        return new Response(200, responseRepresentation.render(models, requestAuth));
     }
 
     /**
      * This is the standard "delete" action for the HTTP DELETE method.
      * It will call the selectedRepresentations "deleteRepresentation" method.
      * 
-     * @param {any} auth 
-     * @param {any} body 
      * @param {any} models 
-     * @param {any} selectedRepresentation 
+     * @param {any} requestBody
+     * @param {any} requestRepresentation
+     * @param {any} requestAuth 
+     * @param {any} responseRepresentation 
      * @returns 
      */
-    async _delete (auth, body, models, selectedRepresentation) {
-        await selectedRepresentation.deleteRepresentation(models);
+    async _delete (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
+        await requestRepresentation.delete(models, requestAuth);
         return new Response(204);
     }
 
@@ -398,12 +394,12 @@ module.exports = class Resource {
         let acceptedContentType = Accept.charset(acceptHeader || defaultMediaType, Object.keys(representations));
         let representation = this._getRepresentation(acceptedContentType, representations);
 
-        if (!representation) {
-            // If we could not meet their accept list, fail.
-            throw new NotAcceptableError('No acceptable media types for this resource.');
+        if (representation) {
+            return representation;
         }
 
-        return representation;
+        // If we could not meet their accept list, fail.
+        throw new NotAcceptableError('No acceptable media types for this resource.');
     }
 
     /**
@@ -455,6 +451,10 @@ module.exports = class Resource {
             return undefined;
         }
 
+        /*
+         * Turn search params into a non-search param object because our schema validation
+         * system fails on URLSearchParams
+         */
         if (searchParams instanceof URLSearchParams) {
             let params = {};
         
@@ -486,22 +486,6 @@ module.exports = class Resource {
 
             throw e;
         }
-    }
-
-    /**
-     * Initates the validation of the query parameters, and if valid sends those parameters to this resources "modelsResolver" function.
-     * The API developer should create this function on their own resources to take request parameters and return models.
-     * 
-     * The API developer should assume that they can do whatever they want with the result of getModels, and assume that
-     * the action and representation will receive those models untouched
-     * 
-     * @param {*} url 
-     * @param {*} method 
-     */
-    async _getModels(urlObject, urlParams, method) {    
-        await this._validateSearchParams(urlObject.searchParams);
- 
-        return this.modelsResolver(urlParams, urlObject.searchParams, method, urlObject.pathname);
     }
 
     /**
