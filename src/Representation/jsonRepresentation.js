@@ -47,5 +47,5 @@ module.exports = class JSONRepresentation extends Representation {
         }
     
         return obj;
-}
+    }
 };

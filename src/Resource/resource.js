@@ -138,6 +138,7 @@ module.exports = class Resource {
                     this._getMethodConfig(method, 'requestMediaTypes'));
 
                 requestBody = new RequestMediaHandler(requestBody, requestAuth);
+                await requestBody.parseInput(requestAuth);
             } else {
                 /*
                 * Here's a safe short cut if we want the request to still work even though we
@@ -171,7 +172,7 @@ module.exports = class Resource {
             let action = this._getMethodConfig(method, 'action');
 
             if (this[action]) {
-                await this[action](models, requestBody, requestAuth, responseMediaHandler);
+                await this[action](models, requestBody, requestAuth);
             } else {
                 throw new MethodNotAllowedError(this.getValidMethods());
             }

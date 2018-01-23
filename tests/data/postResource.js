@@ -59,23 +59,19 @@ module.exports = class PostResource extends Resource {
         throw new NotFoundError();
     }
 
-    get (requestBody, models, auth) {
-
+    get (models, requestBody, auth) {
+        // do dee doo. nothing to see here but we need it anyway. Is there a better solution for this?
     }
 
-    append (requestBody, models, auth) {
-
+    append (models, requestBody, auth) {
+        // todo: I need a submission representation
     }
 
-    fullReplace (requestBody, models, auth) {
-
+    partialEdit (models, requestBody, auth) {
+        requestBody.applyToModels(models, auth);
     }
 
-    partialEdit (requestBody, models, auth) {
-
-    }
-
-    delete (requestBody, models, auth) {
-
+    delete (models, requestBody, auth) {
+        models.delete();
     }
 };
