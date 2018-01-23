@@ -6,6 +6,7 @@ module.exports = new JSONRepresentation({
     "type": "object",
     "properties": {
         "id": {
+            //TODO: Disallow writes on id
             "resolve": (models) => {
                 return models.id;
             }

@@ -54,7 +54,7 @@ module.exports = class JSONRepresentation extends Representation {
     }
 
     render (models, auth) {
-        return this._renderSchema(this._schema, models, auth, 'resolve');
+        return JSON.stringify(this._renderSchema(this._schema, models, auth, 'resolve'));
     }
 
     _renderSchema (schema, models, auth, action) {
@@ -106,7 +106,7 @@ module.exports = class JSONRepresentation extends Representation {
         return this._schema.submit(requestBody, models, auth);
     }
 
-    edit (requestBody, models, auth) {
+    replace (requestBody, models, auth) {
         // navigate through the request body in parallel with the schema 
         // pass each requestBody value alongwith the models to the schema save method
         return this._schema.save(models);

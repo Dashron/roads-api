@@ -23,7 +23,7 @@ function ensureInvalidRequest(resource, method, url, urlParams, body, headers, m
     .then((response) => {
         test.deepEqual(response, {
             status: 400,
-            body: { title: message, status: 400 },
+            body: JSON.stringify({ title: message, status: 400 }),
             headers: {} 
         });
     })
@@ -57,7 +57,7 @@ exports['Test GET Resource execution'] = function (test) {
             Authorization: 'Bearer abcde'
         }, {
             status: 200,
-            body: { id: 12345, title: 'hello', post: "the body" },
+            body: JSON.stringify({ id: 12345, title: 'hello', post: "the body" }),
             headers: {} 
         },
         test
@@ -84,7 +84,7 @@ exports['Test valid PATCH Resource execution'] = function (test) {
             Authorization: 'Bearer abcde'
         }, {
             status: 200,
-            body: { id: 12345, title: 'new edited title', post: "the body" },
+            body: JSON.stringify({ id: 12345, title: 'new edited title', post: "the body" }),
             headers: {} 
         },
         test
@@ -158,7 +158,7 @@ exports['Test query validation single parameters'] = function (test) {
         },
         {
             status: 200,
-            body: { id: 12345, title: 'hello', post: 'the body' },
+            body: JSON.stringify({ id: 12345, title: 'hello', post: 'the body' }),
             headers: {} 
         },
         test
@@ -225,7 +225,7 @@ exports['Test query validation passes for required properties'] = function (test
         },
         {
             status: 200,
-            body: { id: 12345, title: 'hello', post: 'the body' },
+            body: JSON.stringify({ id: 12345, title: 'hello', post: 'the body' }),
             headers: {} 
         },
         test

@@ -10,6 +10,7 @@ const ContentType = require('content-type');
 const Response = require('../response.js');
 const Accept = require('accept');
 const validateObj = require('../objectValidator.js');
+
 const { 
     URLSearchParams,
     URL
@@ -31,17 +32,42 @@ const {
     NotAcceptableError,
     HTTPError,
     InputValidationError,
-    UnsupportedMediaTypeError
+    UnsupportedMediaTypeError,
+    MethodNotAllowed
 } = require('../httpErrors.js');
+
+const globalDefaults = {
+    [METHOD_GET]: {
+        action: '_get'
+    },
+    [METHOD_POST]: {
+        action: '_append'
+    },
+    [METHOD_PUT]: {
+        action: '_replace'
+    },
+    [METHOD_PATCH]: {
+        action: '_edit'
+    },
+    [METHOD_DELETE]: {
+        action: '_delete'
+    }
+};
 
 module.exports = class Resource {
     // todo: it would be cool if we could expose "expected url parameters" in a way that slots well with the router and raises warnings
-    constructor (configDefaults) {
+    constructor (configDefaults, defaultMethods) {
         this._methods = {};
-        this._defaultMediaType = {};
-        this._authResolvers = {};
+
+        defaultMethods.forEach((method) => {
+            // Technically I could assign configDefaults here, but it would
+            // get a little weird with the other setMethods, so I keep this simple
+            this._methods[method] = {};
+        });
+
         this._configDefaults = configDefaults;
         this._searchSchema = {};
+        this._requiredSearchProperties = null;
     }
 
     /**
@@ -55,20 +81,6 @@ module.exports = class Resource {
     }
 
     /**
-     * Assign many HTTP methods to this resource
-     * The config can have many methods
-     * 
-     * authRequired: boolean, Indicates whether unauthenticated users can access this resource.
-     * 
-     * @param {any} config 
-     */
-    setMethods (config) {
-        for (let method in config) {
-            this.setMethod(method, config[method]);
-        }
-    }
-
-    /**
      * Sets the schema of the query parameters this resource accepts
      * 
      * @param {any} schema 
@@ -77,38 +89,6 @@ module.exports = class Resource {
     setSearchSchema (schema, requiredProperties) {
         this._searchSchema = schema;
         this._requiredSearchProperties = requiredProperties;
-    }
-
-    /**
-     * Sets the default media type for this resource. This should be a string such as "application/json"
-     * The second parameter defines whether the content type should apply to requests (with "request", 
-     * this sets the default for request bodies and the content type header) or responses (with "response",
-     * this sets the default for response bodies and the accept header). 
-     * 
-     * If you requestOrResponse is undefined, the media type will be set for both requests and responses
-     * 
-     * @param {any} mediaType 
-     */
-    setDefaultMediaType (mediaType, requestOrResponse) {
-        if (typeof(requestOrResponse) === "undefined" || requestOrResponse === 'request') {
-            this._defaultRequestContentType = mediaType;
-        }
-
-        // Note, the double set of request && response when requestOrResponse is undefined is intentional
-        if (typeof(requestOrResponse) === "undefined" || requestOrResponse === 'response') {
-            this._defaultResponseContentType = mediaType;
-        }
-    }
-
-    /**
-     * Assigns a AuthResolver to a specific authentication scheme
-     * TODO: This is a little janky, we might want a different way of managing these
-     * 
-     * @param {any} scheme 
-     * @param {any} resolver 
-     */
-    setAuthResolver(scheme, resolver) {
-        this._authResolvers[scheme] = resolver;
     }
 
     /**
@@ -126,6 +106,10 @@ module.exports = class Resource {
         }
 
         try {
+            if (!this._methods[method]) {
+                throw new MethodNotAllowed(Object.keys(this._methods));
+            }
+            
             /*
              * Identify authentication information so we can provide it to all further methods
              * If the authentication credentials are valid, the API developer should assume that 
@@ -135,12 +119,16 @@ module.exports = class Resource {
              * If the credentials are not provided, the client should return "null"
              * If the credentials are invalid, the client should throw an error (TODO: What error?)
              */
-            let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], this._getMethodConfig(method, 'authRequired'), this._getMethodConfig(method, 'validAuthSchemes'));
+            let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], 
+                this._getMethodConfig(method, 'authRequired'), 
+                this._getMethodConfig(method, 'authSchemes'));
 
             /*
              * Identify the proper request representation from the accept header
              */
-            let requestRepresentation = this._getRequestRepresentation(requestHeaders[HEADER_CONTENT_TYPE], this._defaultRequestContentType, this._getMethodConfig(method, 'representations'));
+            let requestRepresentation = this._getRequestRepresentation(requestHeaders[HEADER_CONTENT_TYPE], 
+                this._getMethodConfig(method, 'defaultRequestMediaType'), 
+                this._getMethodConfig(method, 'representations'));
             
             if (requestBody) {
                 requestBody = requestRepresentation.parseInput(requestBody, requestAuth);
@@ -162,17 +150,21 @@ module.exports = class Resource {
              * Locte a collection of models for this request. These models are provided to the action, and are not manipulated in any way by this framework.
              * The API developer should assume that they can do whatever they want with provided models
              */
-            let models = await this.modelsResolver(urlParams, urlObject.searchParams, method, urlObject.pathname);
+            let models = await this.modelsResolver(urlParams, 
+                urlObject.searchParams, method, urlObject.pathname);
 
             /*
              * Find the appropriate resource representation for this resource, and the client's request
              */
-            let responseRepresentation = this._getResponseRepresentation(requestHeaders[HEADER_ACCEPT], this._defaultResponseContentType, this._getMethodConfig(method, 'representations'));
+            let responseRepresentation = this._getResponseRepresentation(requestHeaders[HEADER_ACCEPT], 
+                this._getMethodConfig(method, 'defaultResponseMediaType'), 
+                this._getMethodConfig(method, 'representations'));
 
             /**
              * Perform the HTTP action and get the response
              */
-            let response = await this[this._getMethodConfig(method, 'action')](models, requestBody, requestRepresentation, requestAuth, responseRepresentation);
+            let response = await this[this._getMethodConfig(method, 'action')](models, 
+                requestBody, requestRepresentation, requestAuth, responseRepresentation);
 
             /* 
              * Force the methods to return response objects
@@ -205,32 +197,16 @@ module.exports = class Resource {
         if (this._configDefaults[field]) {
             return this._configDefaults[field];
         }
-        
-        // roads-api default method actions, can be overridden in each method config
-        if (field === 'action') {
-            switch (method) {
-                case METHOD_GET:
-                    return '_get';
-                case METHOD_POST:
-                    // todo: offer an easy "submit" option
-                    return '_append';
-                case METHOD_PUT:
-                    return '_replace';
-                case METHOD_PATCH:
-                    return '_edit';
-                case METHOD_DELETE:
-                    return '_delete';
-            }
+
+        // roads defaults for global defaults on a per-method basis
+        if (globalDefaults[method][field]) {
+            return globalDefaults[method][field];
         }
 
-        // default to no schema, which means any request body will fail
-        // TODO: We need a way to validate schemas when you construct your resource
-        if (field === 'schema') {
-            return null;
-        }
-
-        throw new Error(this.className + ' has attempted to access a missing config value for the method ' + 
-            method + ' and the field ' + field + '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addMethod.');
+        throw new Error(this.className + 
+            ' has attempted to access a missing config value for the method ' + 
+            method + ' and the field ' + field + 
+            '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addMethod.');
     }
 
     /**
@@ -276,6 +252,7 @@ module.exports = class Resource {
      * @returns 
      */
     async _edit (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
+        // for now we are just treating this like a submission, because this is going to be hard to get right
         await requestRepresentation.edit(requestBody, models, requestAuth);
         return new Response(200, responseRepresentation.render(models, requestAuth));
     }
@@ -345,7 +322,7 @@ module.exports = class Resource {
      * @param {any} validSchemes 
      * @returns 
      */
-    _getAuth(authorizationHeader, authRequired, validSchemes) {
+    _getAuth(authorizationHeader, authRequired, authSchemes) {
         let auth = null;
 
         // If this resource requires authentication, we enforce that behavior here
@@ -355,31 +332,28 @@ module.exports = class Resource {
                 return null;
             }
 
-            throw new UnauthorizedError('Authorization required', validSchemes[0]);
+            throw new UnauthorizedError('Authorization required', Object.keys(authSchemes)[0]);
         }
 
         // parse the auth header and validate the format (e.g. parse basic auth into username & password)
         let {
             scheme,
             parameters
-        } = authParser(authorizationHeader, validSchemes);
+        } = authParser(authorizationHeader, Object.keys(authSchemes));
 
-        if (this._authResolvers[scheme]) {
-            auth = this._authResolvers[scheme](parameters);
-            
-            // If we have auth details, return it
-            if (auth !== null) {
-                return auth;
-            }
-
-            // If we have no auth, and it's not required, return null
-            if (!authRequired) {
-                return null;
-            }
-
-            // if we have no auth and it's required, we fall through to the UnauthorizedError
+        auth = authSchemes[scheme](parameters);
+        
+        // If we have auth details, return it
+        if (auth !== null) {
+            return auth;
         }
 
+        // If we have no auth, and it's not required, return null
+        if (!authRequired) {
+            return null;
+        }
+
+        // if we have no auth and it's required, we fall through to the UnauthorizedError
         throw new UnauthorizedError('Unsupported authorization scheme', validSchemes[0]);
     }
 

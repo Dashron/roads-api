@@ -8,7 +8,7 @@ let HTTPError = class HTTPError extends Error {
 
     toResponse() {
         // Problem details JSON format: https://tools.ietf.org/html/rfc7807
-        return new Response(this.status, {
+        return new Response(this.status, JSON.stringify({
             // URI identifier, should resolve to human readable documentation
             //type: '',
             // Short, human readable message
@@ -19,7 +19,7 @@ let HTTPError = class HTTPError extends Error {
             //details: '',
             // URI Identifier that may or may not resolve to docs
             //instance: ''
-        });
+        }));
     }
 };
 
@@ -62,6 +62,12 @@ module.exports = {
             }
 
             return header;
+        }
+    },
+    MethodNotAllowed: class MethodNotAllowedError extends HTTPError {
+        constructor (validMethods) {
+            super(validMethods.join(', '));
+            this.status = 405;
         }
     },
     // 406
