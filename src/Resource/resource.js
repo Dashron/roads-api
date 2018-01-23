@@ -33,24 +33,34 @@ const {
     HTTPError,
     InputValidationError,
     UnsupportedMediaTypeError,
-    MethodNotAllowed
+    MethodNotAllowedError
 } = require('../httpErrors.js');
 
 const globalDefaults = {
     [METHOD_GET]: {
-        action: '_get'
+        action: 'get',
+        status: 200,
+        requestMediaTypes: {}
     },
     [METHOD_POST]: {
-        action: '_append'
+        action: 'append',
+        status: 201,
+        requestMediaTypes: {}
     },
     [METHOD_PUT]: {
-        action: '_replace'
+        action: 'fullReplace',
+        status: 200,
+        requestMediaTypes: {}
     },
     [METHOD_PATCH]: {
-        action: '_edit'
+        action: 'partialEdit',
+        status: 200,
+        requestMediaTypes: {}
     },
     [METHOD_DELETE]: {
-        action: '_delete'
+        action: 'delete',
+        status: 204,
+        requestMediaTypes: {}
     }
 };
 
@@ -106,10 +116,6 @@ module.exports = class Resource {
         }
 
         try {
-            if (!this._methods[method]) {
-                throw new MethodNotAllowed(Object.keys(this._methods));
-            }
-            
             /*
              * Identify authentication information so we can provide it to all further methods
              * If the authentication credentials are valid, the API developer should assume that 
@@ -122,16 +128,16 @@ module.exports = class Resource {
             let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], 
                 this._getMethodConfig(method, 'authRequired'), 
                 this._getMethodConfig(method, 'authSchemes'));
-
-            /*
-             * Identify the proper request representation from the accept header
-             */
-            let requestRepresentation = this._getRequestRepresentation(requestHeaders[HEADER_CONTENT_TYPE], 
-                this._getMethodConfig(method, 'defaultRequestMediaType'), 
-                this._getMethodConfig(method, 'representations'));
             
             if (requestBody) {
-                requestBody = requestRepresentation.parseInput(requestBody, requestAuth);
+                /*
+                * Identify the proper request representation from the accept header
+                */
+                let RequestMediaHandler = this._getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
+                    this._getMethodConfig(method, 'defaultRequestMediaType'), 
+                    this._getMethodConfig(method, 'requestMediaTypes'));
+
+                requestBody = new RequestMediaHandler(requestBody, requestAuth);
             } else {
                 /*
                 * Here's a safe short cut if we want the request to still work even though we
@@ -150,35 +156,46 @@ module.exports = class Resource {
              * Locte a collection of models for this request. These models are provided to the action, and are not manipulated in any way by this framework.
              * The API developer should assume that they can do whatever they want with provided models
              */
-            let models = await this.modelsResolver(urlParams, 
-                urlObject.searchParams, method, urlObject.pathname);
+            let models = await this.modelsResolver(urlParams, urlObject.searchParams, method, urlObject.pathname);
 
             /*
              * Find the appropriate resource representation for this resource, and the client's request
              */
-            let responseRepresentation = this._getResponseRepresentation(requestHeaders[HEADER_ACCEPT], 
+            let responseMediaHandler = new (this._getResponseMediaHandler(requestHeaders[HEADER_ACCEPT], 
                 this._getMethodConfig(method, 'defaultResponseMediaType'), 
-                this._getMethodConfig(method, 'representations'));
+                this._getMethodConfig(method, 'responseMediaTypes')))();
 
             /**
              * Perform the HTTP action and get the response
              */
-            let response = await this[this._getMethodConfig(method, 'action')](models, 
-                requestBody, requestRepresentation, requestAuth, responseRepresentation);
+            let action = this._getMethodConfig(method, 'action');
 
-            /* 
-             * Force the methods to return response objects
-             * todo: this might not be what we want? 
-             * On the other hand this should not be handled by the API developer
-             */
-            if (!(response instanceof Response)) {
-                throw new TypeError('Resource functions must return a Response object');
+            if (this[action]) {
+                await this[action](models, requestBody, requestAuth, responseMediaHandler);
+            } else {
+                throw new MethodNotAllowedError(this.getValidMethods());
             }
 
-            return response;
+            return new Response(this._getMethodConfig(method, 'status'), method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth));
         } catch (e) {
             return this._buildErrorResponse(e);
         }
+    }
+
+    /**
+     * Find all methods that have been enabled for this resource
+     */
+    getValidMethods() {
+        let methods = Object.keys(this._methods);
+        let validMethods = [];
+
+        methods.forEach((method) => {
+            if (this[this._getMethodConfig(method, 'action')]) {
+                validMethods.push(method);
+            }
+        });
+
+        return validMethods;
     }
 
     /**
@@ -203,109 +220,10 @@ module.exports = class Resource {
             return globalDefaults[method][field];
         }
 
-        throw new Error(this.className + 
+        throw new Error(this.constructor.name + 
             ' has attempted to access a missing config value for the method ' + 
             method + ' and the field ' + field + 
             '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addMethod.');
-    }
-
-    /**
-     * This is the default "view" action for the HTTP GET method
-     * 
-     * @param {any} models 
-     * @param {any} requestBody
-     * @param {any} requestRepresentation
-     * @param {any} requestAuth 
-     * @param {any} responseRepresentation 
-     * @returns 
-     */
-    async _get (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
-        return new Response(200, responseRepresentation.render(models, requestAuth));
-    }
-
-    /**
-     * This is the default "replace" action for the HTTP PUT method.
-     * It will call the target representations "saveRepresentation" method
-     * 
-     * @param {any} models 
-     * @param {any} requestBody
-     * @param {any} requestRepresentation
-     * @param {any} requestAuth 
-     * @param {any} responseRepresentation 
-     * @returns 
-     */
-    async _replace (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
-        await requestRepresentation.replace(requestBody, models, requestAuth);
-        return new Response(200, responseRepresentation.render(models, requestAuth));
-    }
-
-    /**
-     * This is the deafult "edit" action for the HTTP PATCH method.
-     * It will call the target representations "saveRepresentation" method
-     * TODO: Why isn't this using the patchResolver? huh. maybe a bug?
-     * 
-     * @param {any} models 
-     * @param {any} requestBody
-     * @param {any} requestRepresentation
-     * @param {any} requestAuth 
-     * @param {any} responseRepresentation 
-     * @returns 
-     */
-    async _edit (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
-        // for now we are just treating this like a submission, because this is going to be hard to get right
-        await requestRepresentation.edit(requestBody, models, requestAuth);
-        return new Response(200, responseRepresentation.render(models, requestAuth));
-    }
-
-    /**
-     * This is the default "append" action for the HTTP POST method.
-     * It will call the selectedRepresentations "append" method.
-     * It should be used if you want to accept a resource representation and 
-     * append it on to a collection of resources (e.g. POST /blog/posts)
-     * 
-     * @param {any} models 
-     * @param {any} requestBody
-     * @param {any} requestRepresentation
-     * @param {any} requestAuth 
-     * @param {any} responseRepresentation 
-     * @returns 
-     */
-    async _append (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
-        await requestRepresentation.append(requestBody, models, requestAuth);
-        return new Response(201, responseRepresentation.render(models, requestAuth));
-    }
-
-    /**
-     * This is the optional "submit" action for the HTTP POST method.
-     * It will call the selectedRepresentations "submit" method.
-     * It should be used when you are sending arbitrary JSON data to a resource.
-     * 
-     * @param {any} models 
-     * @param {any} requestBody
-     * @param {any} requestRepresentation
-     * @param {any} requestAuth 
-     * @param {any} responseRepresentation 
-     * @returns 
-     */
-    async _submit (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
-        await requestRepresentation.submit(requestBody, models, requestAuth);
-        return new Response(200, responseRepresentation.render(models, requestAuth));
-    }
-
-    /**
-     * This is the standard "delete" action for the HTTP DELETE method.
-     * It will call the selectedRepresentations "deleteRepresentation" method.
-     * 
-     * @param {any} models 
-     * @param {any} requestBody
-     * @param {any} requestRepresentation
-     * @param {any} requestAuth 
-     * @param {any} responseRepresentation 
-     * @returns 
-     */
-    async _delete (models, requestBody, requestRepresentation, requestAuth, responseRepresentation) {
-        await requestRepresentation.delete(models, requestAuth);
-        return new Response(204);
     }
 
     /**
@@ -354,7 +272,7 @@ module.exports = class Resource {
         }
 
         // if we have no auth and it's required, we fall through to the UnauthorizedError
-        throw new UnauthorizedError('Unsupported authorization scheme', validSchemes[0]);
+        throw new UnauthorizedError('Unsupported authorization scheme', authSchemes[0]);
     }
 
     /**
@@ -364,16 +282,12 @@ module.exports = class Resource {
      * @param {*} representations 
      * @param {*} defaultMediaType 
      */
-    _getResponseRepresentation(acceptHeader, defaultMediaType, representations) {
+    _getResponseMediaHandler(acceptHeader, defaultMediaType, representations) {
         let acceptedContentType = Accept.charset(acceptHeader || defaultMediaType, Object.keys(representations));
-        let representation = this._getRepresentation(acceptedContentType, representations);
-
-        if (representation) {
-            return representation;
-        }
-
-        // If we could not meet their accept list, fail.
-        throw new NotAcceptableError('No acceptable media types for this resource.');
+        return this._getMediaHandler(acceptedContentType, representations, () => {
+            // If we could not meet their accept list, fail.
+            throw new NotAcceptableError('No acceptable media types for this resource.');
+        });
     }
 
     /**
@@ -383,16 +297,12 @@ module.exports = class Resource {
      * @param {*} defaultContentType 
      * @param {*} representations 
      */
-    _getRequestRepresentation(contentTypeHeader, defaultContentType, representations) {        
+    _getRequestMediaHandler(contentTypeHeader, defaultContentType, representations) {        
         let parsedContentType = ContentType.parse(contentTypeHeader || defaultContentType);
-        let representation = this._getRepresentation(parsedContentType.type, representations);
-
-        if (representation) {
-            return representation;
-        }
-
-        // If we could not meet their accept list, fail.
-        throw new UnsupportedMediaTypeError('This media type is not supported on this endpoint.');
+        return this._getMediaHandler(parsedContentType.type, representations, () => {
+            // If we could not meet their accept list, fail.
+            throw new UnsupportedMediaTypeError('This media type is not supported on this endpoint.');
+        });
     }
 
     /**
@@ -401,7 +311,7 @@ module.exports = class Resource {
      * @param {*} mediaType The media type of the representation
      * @param {*} representations an object of media type => representation
      */
-    _getRepresentation(mediaType, representations) {
+    _getMediaHandler(mediaType, representations, onMiss) {
         /**
          * Ensure that we have a representation for this media type
          */
@@ -409,7 +319,7 @@ module.exports = class Resource {
             return representations[mediaType];
         }
     
-        return false;
+        return onMiss();
     }
 
     /**

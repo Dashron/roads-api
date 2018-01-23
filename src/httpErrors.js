@@ -64,7 +64,7 @@ module.exports = {
             return header;
         }
     },
-    MethodNotAllowed: class MethodNotAllowedError extends HTTPError {
+    MethodNotAllowedError: class MethodNotAllowedError extends HTTPError {
         constructor (validMethods) {
             super(validMethods.join(', '));
             this.status = 405;

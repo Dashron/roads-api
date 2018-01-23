@@ -17,23 +17,23 @@ module.exports = class PostResource extends Resource {
             authSchemes: {
                 [AUTH_BEARER]: require('./tokenResolver.js')
             },
-            representations: {
+            responseMediaTypes: {
                 [MEDIA_JSON]: require('./postRepresentation.js')
             },
             authRequired: true,
             defaultRequestMediaType: MEDIA_JSON,
             defaultResponseMediaType: MEDIA_JSON
-        }, [METHOD_GET, METHOD_PUT, METHOD_POST, METHOD_DELETE]);
+        }, [METHOD_GET, METHOD_DELETE]);
         
         this.setMethod(METHOD_PATCH, {
-            representations: {
-                [MEDIA_JSON_MERGE]: require('../../index.js').JSONMergePatchRepresentation,
+            requestMediaTypes: {
+                [MEDIA_JSON_MERGE]: require('./postMergeRepresentation.js'),
             },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });
         
-        // This is just to simplify tests
+        // This is just to simplify tests. It is not recommended as a real resource pattern
         let requiredProperties = includeRequired ? ["requiredProperty"] : undefined;
 
         this.setSearchSchema({
@@ -57,5 +57,25 @@ module.exports = class PostResource extends Resource {
         }
 
         throw new NotFoundError();
+    }
+
+    get (requestBody, models, auth) {
+
+    }
+
+    append (requestBody, models, auth) {
+
+    }
+
+    fullReplace (requestBody, models, auth) {
+
+    }
+
+    partialEdit (requestBody, models, auth) {
+
+    }
+
+    delete (requestBody, models, auth) {
+
     }
 };
