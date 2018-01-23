@@ -21,11 +21,10 @@ module.exports = class PostResource extends Resource {
                 [MEDIA_JSON]: require('./postRepresentation.js')
             },
             authRequired: true,
-            defaultRequestMediaType: MEDIA_JSON,
             defaultResponseMediaType: MEDIA_JSON
-        }, [METHOD_GET, METHOD_DELETE]);
+        }, ["get", "delete"]);
         
-        this.setMethod(METHOD_PATCH, {
+        this.addAction("partialEdit", {
             requestMediaTypes: {
                 [MEDIA_JSON_MERGE]: require('./postMergeRepresentation.js'),
             },
@@ -65,6 +64,9 @@ module.exports = class PostResource extends Resource {
 
     append (models, requestBody, auth) {
         // todo: I need a submission representation
+        // todo: If I don't have this function, but I have submit, post should route there. 
+        // todo: have an error thrown on setup if both append and submit exist.
+        // have this auto-validate the request body against the post representation. Maybe steal the merge patch logic, but how do we handle id?
     }
 
     partialEdit (models, requestBody, auth) {

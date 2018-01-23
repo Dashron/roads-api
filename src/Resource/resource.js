@@ -37,28 +37,28 @@ const {
 } = require('../httpErrors.js');
 
 const globalDefaults = {
-    [METHOD_GET]: {
-        action: 'get',
+    get: {
+        method: METHOD_GET,
         status: 200,
         requestMediaTypes: {}
     },
-    [METHOD_POST]: {
-        action: 'append',
+    append: {
+        method: METHOD_POST,
         status: 201,
         requestMediaTypes: {}
     },
-    [METHOD_PUT]: {
-        action: 'fullReplace',
+    fullReplace: {
+        method: METHOD_PUT,
         status: 200,
         requestMediaTypes: {}
     },
-    [METHOD_PATCH]: {
-        action: 'partialEdit',
+    partialEdit: {
+        method: METHOD_PATCH,
         status: 200,
         requestMediaTypes: {}
     },
-    [METHOD_DELETE]: {
-        action: 'delete',
+    "delete": {
+        method: METHOD_DELETE,
         status: 204,
         requestMediaTypes: {}
     }
@@ -66,13 +66,13 @@ const globalDefaults = {
 
 module.exports = class Resource {
     // todo: it would be cool if we could expose "expected url parameters" in a way that slots well with the router and raises warnings
-    constructor (configDefaults, defaultMethods) {
-        this._methods = {};
+    constructor (configDefaults, supportedActions) {
+        this._actions = {};
 
-        defaultMethods.forEach((method) => {
+        supportedActions.forEach((action) => {
             // Technically I could assign configDefaults here, but it would
-            // get a little weird with the other setMethods, so I keep this simple
-            this._methods[method] = {};
+            // get a little weird with the other setActions, so I keep this simple
+            this._actions[action] = {};
         });
 
         this._configDefaults = configDefaults;
@@ -81,13 +81,13 @@ module.exports = class Resource {
     }
 
     /**
-     * Assign a single HTTP method to this resource
+     * Add a single action to this resource.
      * 
-     * @param {any} method 
+     * @param {any} action 
      * @param {any} [config={}] 
      */
-    setMethod (method, config = {}) {
-        this._methods[method] = config;
+    addAction (action, config = {}) {
+        this._actions[action] = config;
     }
 
     /**
@@ -116,8 +116,14 @@ module.exports = class Resource {
         }
 
         try {
+            let action = this.getActionForMethod(method);
+
+            if (!this[action]) {
+                throw new MethodNotAllowedError(this.getValidMethods());
+            }
+
             /*
-             * Identify authentication information so we can provide it to all further methods
+             * Identify authentication information so we can provide it to all further actions
              * If the authentication credentials are valid, the API developer should assume that 
              * they can do whatever they want with the result of getModels, and assume that
              * the action and representation will receive those models untouched.
@@ -126,16 +132,16 @@ module.exports = class Resource {
              * If the credentials are invalid, the client should throw an error (TODO: What error?)
              */
             let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], 
-                this._getMethodConfig(method, 'authRequired'), 
-                this._getMethodConfig(method, 'authSchemes'));
+                this._getActionConfig(action, 'authRequired'), 
+                this._getActionConfig(action, 'authSchemes'));
             
             if (requestBody) {
                 /*
                 * Identify the proper request representation from the accept header
                 */
                 let RequestMediaHandler = this._getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
-                    this._getMethodConfig(method, 'defaultRequestMediaType'), 
-                    this._getMethodConfig(method, 'requestMediaTypes'));
+                    this._getActionConfig(action, 'defaultRequestMediaType'), 
+                    this._getActionConfig(action, 'requestMediaTypes'));
 
                 requestBody = new RequestMediaHandler(requestBody, requestAuth);
                 await requestBody.parseInput(requestAuth);
@@ -157,29 +163,38 @@ module.exports = class Resource {
              * Locte a collection of models for this request. These models are provided to the action, and are not manipulated in any way by this framework.
              * The API developer should assume that they can do whatever they want with provided models
              */
-            let models = await this.modelsResolver(urlParams, urlObject.searchParams, method, urlObject.pathname);
+            let models = await this.modelsResolver(urlParams, urlObject.searchParams, action, urlObject.pathname);
 
             /*
              * Find the appropriate resource representation for this resource, and the client's request
              */
             let responseMediaHandler = new (this._getResponseMediaHandler(requestHeaders[HEADER_ACCEPT], 
-                this._getMethodConfig(method, 'defaultResponseMediaType'), 
-                this._getMethodConfig(method, 'responseMediaTypes')))();
+                this._getActionConfig(action, 'defaultResponseMediaType'), 
+                this._getActionConfig(action, 'responseMediaTypes')))();
 
             /**
              * Perform the HTTP action and get the response
              */
-            let action = this._getMethodConfig(method, 'action');
-
-            if (this[action]) {
-                await this[action](models, requestBody, requestAuth);
-            } else {
-                throw new MethodNotAllowedError(this.getValidMethods());
-            }
-
-            return new Response(this._getMethodConfig(method, 'status'), method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth));
+            await this[action](models, requestBody, requestAuth);
+            // todo: find a less janky way to handle this method===delete response handler
+            return new Response(this._getActionConfig(action, 'status'), method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth));
         } catch (e) {
             return this._buildErrorResponse(e);
+        }
+    }
+
+    /**
+     * Find the appropriate resource action for this HTTP method
+     * 
+     * @param {*} method 
+     */
+    getActionForMethod(method) {
+        let actions = Object.keys(this._actions);
+        
+        for (let i = 0; i < actions.length; i++) {
+            if (this._getActionConfig(actions[i], 'method') === method) {
+                return actions[i];
+            }
         }
     }
 
@@ -187,12 +202,12 @@ module.exports = class Resource {
      * Find all methods that have been enabled for this resource
      */
     getValidMethods() {
-        let methods = Object.keys(this._methods);
+        let actions = Object.keys(this._actions);
         let validMethods = [];
 
-        methods.forEach((method) => {
-            if (this[this._getMethodConfig(method, 'action')]) {
-                validMethods.push(method);
+        actions.forEach((action) => {
+            if (this[action]) {
+                validMethods.push(this._getActionConfig(action, 'method'));
             }
         });
 
@@ -200,31 +215,32 @@ module.exports = class Resource {
     }
 
     /**
-     * This is a janky way of finding values in a config, and providing defaults
+     * Find a configuration setting for an action.
+     * If there is not one explicitly set, it checks the cross-action config defaults configured via the resource constructor
+     * If there is not one in the cross-action config defaults it checks global defaults
      * 
-     * TODO: make this less janky
-     * @param {*} method 
+     * @param {*} action 
      * @param {*} field
      */
-    _getMethodConfig (method, field) {
-        if (typeof(this._methods[method][field]) !== "undefined") {
-            return this._methods[method][field];
+    _getActionConfig (action, field) {
+        if (typeof(this._actions[action][field]) !== "undefined") {
+            return this._actions[action][field];
         }
 
-        // client configurable global defaults across all methods
+        // client configurable global defaults across all action
         if (this._configDefaults[field]) {
             return this._configDefaults[field];
         }
 
-        // roads defaults for global defaults on a per-method basis
-        if (globalDefaults[method][field]) {
-            return globalDefaults[method][field];
+        // roads defaults for global defaults on a per-action basis
+        if (globalDefaults[action][field]) {
+            return globalDefaults[action][field];
         }
 
         throw new Error(this.constructor.name + 
-            ' has attempted to access a missing config value for the method ' + 
-            method + ' and the field ' + field + 
-            '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addMethod.');
+            ' has attempted to access a missing config value for the action ' + 
+            action + ' and the field ' + field + 
+            '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addAction.');
     }
 
     /**
@@ -246,7 +262,6 @@ module.exports = class Resource {
 
         // If this resource requires authentication, we enforce that behavior here
         if (!authorizationHeader) {
-            // todo: this probably should be method-specific, not resource specific
             if (!authRequired) {
                 return null;
             }
@@ -325,11 +340,7 @@ module.exports = class Resource {
 
     /**
      * Ensures that the search parameters in the request uri match this resources searchSchema
-     * 
-     * @param {*} requestBody 
-     * @param {*} method 
-     * @param {*} parsedContentType 
-     * @param {*} representation 
+     * @param {*} searchParams 
      */
     async _validateSearchParams(searchParams) {
         if (typeof(searchParams) === 'undefined') {
