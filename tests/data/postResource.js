@@ -12,7 +12,8 @@ const {
 let posts = require('./blogStorage.js');
 
 module.exports = class PostResource extends Resource {
-    constructor(includeRequired) {
+    constructor() {
+        //TODO: Make is post change this whole resource to append only
         super({
             authSchemes: {
                 [AUTH_BEARER]: require('./tokenResolver.js')
@@ -26,26 +27,11 @@ module.exports = class PostResource extends Resource {
         
         this.addAction("partialEdit", {
             requestMediaTypes: {
-                [MEDIA_JSON_MERGE]: require('./postMergeRepresentation.js'),
+                [MEDIA_JSON_MERGE]: require('./postInputRepresentation.js'),
             },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });
-        
-        // This is just to simplify tests. It is not recommended as a real resource pattern
-        let requiredProperties = includeRequired ? ["requiredProperty"] : undefined;
-
-        this.setSearchSchema({
-            per_page: {
-                type: "number"
-            },
-            page: {
-                type: "number"
-            },
-            requiredProperty: {
-                type: "boolean"
-            }
-        }, requiredProperties);
     }
 
     modelsResolver(urlParams, searchParams, method, url) {
@@ -58,21 +44,18 @@ module.exports = class PostResource extends Resource {
         throw new NotFoundError();
     }
 
+    // Maybe this should be on the representation?
     get (models, requestBody, auth) {
         // do dee doo. nothing to see here but we need it anyway. Is there a better solution for this?
     }
 
-    append (models, requestBody, auth) {
-        // todo: I need a submission representation
-        // todo: If I don't have this function, but I have submit, post should route there. 
-        // todo: have an error thrown on setup if both append and submit exist.
-        // have this auto-validate the request body against the post representation. Maybe steal the merge patch logic, but how do we handle id?
-    }
-
+    // maybe this should just live on the request body?
     partialEdit (models, requestBody, auth) {
-        requestBody.applyToModels(models, auth);
+        requestBody.applyEdit(models, auth);
+        models.save();
     }
 
+    // maybe this should just live on the request body?
     delete (models, requestBody, auth) {
         models.delete();
     }

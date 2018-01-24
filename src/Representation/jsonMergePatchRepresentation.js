@@ -12,6 +12,10 @@ module.exports = class JSONMergePatchRepresentation extends Representation {
         this._requestBody = '';
     }
 
+    getSchema() {
+        return this._schema;
+    }
+
     setRequestBody (requestBody) {
         this._requestBody = requestBody;
     }
@@ -37,10 +41,10 @@ module.exports = class JSONMergePatchRepresentation extends Representation {
             removeAdditional: false
         });
         
-        let compiledSchema = ajv.compile(this._schema);
+        let compiledSchema = ajv.compile(this.getSchema());
         let isValid = false;
 
-        if (this._schema.$async) {
+        if (this.getSchema().$async) {
             try {
                 return await compiledSchema(requestBody);
             } catch(errors) {
@@ -64,8 +68,8 @@ module.exports = class JSONMergePatchRepresentation extends Representation {
      * @param {*} models 
      * @param {*} auth 
      */
-    applyToModels (models, auth) {
-        return this._applyRequest(this._schema, this._requestBody, models, auth);
+    applyEdit (models, auth) {
+        return this._applyRequest(this.getSchema(), this._requestBody, models, auth);
     }
 
     _applyRequest (schema, requestBody, models, auth) {

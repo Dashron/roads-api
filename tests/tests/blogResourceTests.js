@@ -1,6 +1,8 @@
 "use strict";
 
 let PostResource = require('../data/postResource.js');
+let PostCollectionResource = require('../data/postCollectionResource.js');
+
 const BASE_URL = 'http://dashron.com';
 let { URL } = require('url');
 
@@ -65,7 +67,81 @@ exports['Test GET Resource execution'] = function (test) {
     .then(() => {
         test.done();
     });
+};
 
+exports['Test GET Collection Resource execution'] = function (test) {
+    ensureValidRequest(
+        new PostCollectionResource(),
+        'GET', 
+        new URL('/posts', BASE_URL), 
+        undefined,
+        undefined, 
+        {
+            Authorization: 'Bearer abcde'
+        }, {
+            status: 200,
+            body: JSON.stringify({
+                data: [{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"}],
+                perPage: 10,
+                page: 1
+            }),
+            headers: {} 
+        },
+        test
+    )
+    .then(() => {
+        test.done();
+    });
+
+};
+
+exports['Test valid POST Resource execution'] = function (test) {
+    // Edit resource
+    ensureValidRequest(
+        new PostCollectionResource(),
+        'POST',  
+        new URL('/posts', BASE_URL), 
+        undefined, 
+        {
+            title: "new title",
+            post: "my blog post"
+        }, {
+            "Content-Type": "application/json",
+            Authorization: 'Bearer abcde'
+        }, {
+            status: 201,
+            body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"},{"id":12346,"title":"new title","post":"my blog post"}],"perPage":10,"page":1}),
+            headers: {} 
+        },
+        test
+    )
+    .then(() => {
+        test.done();
+    });
+};
+
+exports['Test Invalid POST Resource execution'] = function (test) {
+    ensureInvalidRequest(
+        new PostCollectionResource(),
+        'POST', 
+        new URL('/posts/12345', BASE_URL), 
+        {
+            post_id: 12345
+        }, 
+        {
+            title: "New Name", 
+            id: 5, 
+            post:"New post contents"
+        }, {
+            "Content-Type": "application/json",
+            Authorization: 'Bearer abcde'
+        }, 
+        "Invalid request body",
+        test
+    )
+    .then(() => {
+        test.done();
+    });
 };
 
 exports['Test valid PATCH Resource execution'] = function (test) {
@@ -143,115 +219,3 @@ exports['Test Valid DELETE Resource execution passes'] = function (test) {
     });
 };
 
-exports['Test query validation single parameters'] = function (test) {
-    ensureValidRequest(
-        new PostResource(),
-        'GET', 
-        new URL('/posts/12345?page=5', BASE_URL),
-        {
-            post_id: 12345
-        },
-        undefined,
-        {
-            "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
-        },
-        {
-            status: 200,
-            body: JSON.stringify({ id: 12345, title: 'hello', post: 'the body' }),
-            headers: {} 
-        },
-        test
-    )
-    .then(() => {
-        test.done();
-    });
-};
-
-exports['Test query validation fails on single parameters'] = function (test) {
-    ensureInvalidRequest(
-        new PostResource(),
-        'GET', 
-        new URL('/posts/12345?page=abc', BASE_URL),
-        {
-            post_id: 12345
-        },
-        undefined,
-        {
-            "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
-        },
-        "Invalid Search Query",
-        test
-    )
-    .then(() => {
-        test.done();
-    });
-};
-
-exports['Test query validation fails for additional properties'] = function (test) {
-    ensureInvalidRequest(
-        new PostResource(),
-        'GET', 
-        new URL('/posts/12345?bogusProperty=abc', BASE_URL),
-        {
-            post_id: 12345
-        },
-        undefined,
-        {
-            "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
-        },
-        "Invalid Search Query",
-        test
-    )
-    .then(() => {
-        test.done();
-    });
-};
-
-exports['Test query validation passes for required properties'] = function (test) {
-    ensureValidRequest(
-        new PostResource(true),
-        'GET',
-        new URL('/posts/12345?requiredProperty=true', BASE_URL),
-        {
-            post_id: 12345
-        },
-        undefined,
-        {
-            "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
-        },
-        {
-            status: 200,
-            body: JSON.stringify({ id: 12345, title: 'hello', post: 'the body' }),
-            headers: {} 
-        },
-        test
-    )
-    .then(() => {
-        test.done();
-    });
-};
-
-exports['Test query validation fails for missing required properties'] = function (test) {
-    ensureInvalidRequest(
-        new PostResource(true),
-        'GET', 
-        new URL('/posts/12345', BASE_URL),
-        {
-            post_id: 12345
-        },
-        undefined,
-        {
-            "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
-        },
-        "Invalid Search Query",
-        test
-    )
-    .then(() => {
-        test.done();
-    });
-};

@@ -47,6 +47,11 @@ const globalDefaults = {
         status: 201,
         requestMediaTypes: {}
     },
+    submit: {
+        method: METHOD_POST,
+        status: 201,
+        requestMediaTypes: {}
+    },
     fullReplace: {
         method: METHOD_PUT,
         status: 200,
@@ -74,6 +79,9 @@ module.exports = class Resource {
             // get a little weird with the other setActions, so I keep this simple
             this._actions[action] = {};
         });
+
+        // TODO: If you add both the submit and append actions, you have two POST actions. We should error in that case
+
 
         this._configDefaults = configDefaults;
         this._searchSchema = {};

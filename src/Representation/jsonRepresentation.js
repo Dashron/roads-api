@@ -8,8 +8,14 @@ module.exports = class JSONRepresentation extends Representation {
         this._schema = schema;
     }
 
-    render (models, auth) {
-        return JSON.stringify(this._renderSchema(this._schema, models, auth, 'resolve'));
+    render (models, auth, stringify = true) {
+        let output = this._renderSchema(this.getSchema(), models, auth, 'resolve');
+        
+        if (stringify) {
+            output = JSON.stringify(output);
+        }
+
+        return output;
     }
 
     _renderSchema (schema, models, auth) {
@@ -20,8 +26,7 @@ module.exports = class JSONRepresentation extends Representation {
             case undefined:
                 return schema.resolve(models, auth);
             case "array":
-                throw new Error('Arrays are yet supported in rendered schemas');
-                //return this._renderSchemaArray(schema.items, schema.resolveArrayItems(models, auth), auth);
+                return this._renderSchemaArray(schema.items, schema.resolveArrayItems(models, auth), auth);
             case "object":
                 return this._renderSchemaProperties(schema.properties, models, auth);
             default:
@@ -29,15 +34,19 @@ module.exports = class JSONRepresentation extends Representation {
         }
     }
     
-    /*_renderSchemaArray (schemaItems, modelItems) {
+    getSchema() {
+        return this._schema;
+    }
+
+    _renderSchemaArray (schemaItems, modelItems, auth) {
         let items = [];
-    
+
         modelItems.forEach((item) => {
-            items.push(schemaItems.resolve(item));
+            items.push(this._renderSchema(schemaItems, item, auth));
         });
     
         return items;
-    }*/
+    }
     
     _renderSchemaProperties (properties, models, auth) {
         let obj = {};

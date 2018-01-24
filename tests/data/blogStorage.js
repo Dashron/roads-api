@@ -35,5 +35,11 @@ module.exports = {
         }
 
         return null;
-    }
-}
+    },
+    getAll: (page, perPage) => {
+        let posts = newPosts();
+
+        return [posts[1], posts[2], posts[3], posts[4], posts[12345]];
+    },
+    Post: Post
+};
