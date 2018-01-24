@@ -1,13 +1,8 @@
 "use strict";
 
 const { Resource } = require('../../index.js');
-const { NotFoundError } = require('../../index.js').HTTPErrors;
 
-const {
-    METHOD_GET, METHOD_PUT, METHOD_POST, METHOD_PATCH, METHOD_DELETE,
-    MEDIA_JSON, MEDIA_JSON_MERGE,
-    AUTH_BEARER,
-} = require('../../index.js').CONSTANTS;
+const { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } = require('../../index.js').CONSTANTS;
 
 let posts = require('./blogStorage.js');
 
@@ -15,10 +10,8 @@ module.exports = class PostResource extends Resource {
     constructor(includeRequired) {
         //TODO: Make is post change this whole resource to append only
         super({
-            authSchemes: {
-                [AUTH_BEARER]: require('./tokenResolver.js')
-            },
-            responseMediaTypes: {
+            authSchemes: { [AUTH_BEARER]: require('./tokenResolver.js') },
+            responseMediaTypes: { 
                 [MEDIA_JSON]: require('./collectionRepresentation.js')(new (require('./postRepresentation.js'))(), 
                 (models) => {
                     return models.posts;
@@ -29,9 +22,7 @@ module.exports = class PostResource extends Resource {
         }, ["get"]);
 
         this.addAction("append", {
-            requestMediaTypes: {
-                [MEDIA_JSON]: require('./postInputRepresentation.js'),
-            },
+            requestMediaTypes: { [MEDIA_JSON]: require('./postInputRepresentation.js') },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });
