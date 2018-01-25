@@ -17,7 +17,7 @@ module.exports = class PostResource extends Resource {
         }, ["get", "delete"]);
         
         this.addAction("partialEdit", {
-            requestMediaTypes: { [MEDIA_JSON_MERGE]: require('./postInputRepresentation.js') },
+            requestMediaTypes: { [MEDIA_JSON_MERGE]: require('./postRepresentation.js') },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });

@@ -22,7 +22,7 @@ module.exports = class PostResource extends Resource {
         }, ["get"]);
 
         this.addAction("append", {
-            requestMediaTypes: { [MEDIA_JSON]: require('./postInputRepresentation.js') },
+            requestMediaTypes: { [MEDIA_JSON]: require('./postRepresentation.js') },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });
