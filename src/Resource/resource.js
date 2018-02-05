@@ -74,6 +74,10 @@ module.exports = class Resource {
     constructor (configDefaults, supportedActions) {
         this._actions = {};
 
+        if (!Array.isArray(supportedActions)) {
+            supportedActions = [supportedActions];
+        }
+
         supportedActions.forEach((action) => {
             // Technically I could assign configDefaults here, but it would
             // get a little weird with the other setActions, so I keep this simple
@@ -236,12 +240,12 @@ module.exports = class Resource {
         }
 
         // client configurable global defaults across all action
-        if (this._configDefaults[field]) {
+        if (typeof(this._configDefaults[field]) !== "undefined") {
             return this._configDefaults[field];
         }
 
         // roads defaults for global defaults on a per-action basis
-        if (globalDefaults[action][field]) {
+        if (typeof(globalDefaults[action][field]) !== "undefined") {
             return globalDefaults[action][field];
         }
 

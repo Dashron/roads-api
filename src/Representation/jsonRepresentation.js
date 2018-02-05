@@ -107,8 +107,11 @@ module.exports = class JSONRepresentation extends Representation {
                 }
                 return true;
             }
+            // is this the better way to do this? It didn't work on the first attempt, will come back later
+            //valid: false
         });
         
+        // todo: caching
         let compiledSchema = ajv.compile(this.getSchema());
         let isValid = false;
 
@@ -140,6 +143,7 @@ module.exports = class JSONRepresentation extends Representation {
         return this._applyRequest(this.getSchema(), this._requestBody, models, auth);
     }
 
+    // this is very similar to the render method, maybe we can merge them
     _applyRequest (schema, requestBody, models, auth) {
         if (typeof(requestBody) === "undefined") {
             return;
@@ -163,6 +167,7 @@ module.exports = class JSONRepresentation extends Representation {
         }
     }
     
+    // this is very similar to the render method, maybe we can merge them
     /*_applySchemaArray (schemaItems, modelItems) {
         let items = [];
     
@@ -173,6 +178,7 @@ module.exports = class JSONRepresentation extends Representation {
         return items;
     }*/
     
+    // this is very similar to the render method, maybe we can merge them
     _applyRequestProperties (properties, requestBody, models, auth) {    
         for (let property in properties) {
             this._applyRequest(properties[property], requestBody[property], models, auth);
