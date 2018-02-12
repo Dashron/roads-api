@@ -1,4 +1,12 @@
 "use strict";
+/**
+ * contentTypeResolver.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
+
 const contentType = require('content-type');
 
 const {

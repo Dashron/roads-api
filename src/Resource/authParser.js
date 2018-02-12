@@ -1,4 +1,11 @@
 "use strict";
+/**
+ * authParser.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
 
 const Authorization = require('auth-header');
 

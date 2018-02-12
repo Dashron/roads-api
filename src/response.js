@@ -1,4 +1,11 @@
 "use strict";
+/**
+ * response.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
 
 // TODO: Have this match the fetch api for web clients
 module.exports = class Response {

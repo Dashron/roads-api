@@ -1,3 +1,12 @@
+"use strict";
+/**
+ * index.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
+
 module.exports.Resource = require('./src/Resource/resource.js');
 module.exports.Response = require('./src/response.js');
 module.exports.Router = require('./src/router');

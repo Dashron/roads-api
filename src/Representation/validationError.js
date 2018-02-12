@@ -1,4 +1,12 @@
 "use strict";
+/**
+ * validationError.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
+
 const {
     InvalidRequestError
 } = require('../httpErrors.js');

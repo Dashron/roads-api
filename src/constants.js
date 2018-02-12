@@ -1,3 +1,12 @@
+"use strict";
+/**
+ * constants.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
+
 module.exports = {
     METHOD_GET: 'GET',
     METHOD_PUT: 'PUT',

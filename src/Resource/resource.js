@@ -1,3 +1,12 @@
+"use strict";
+/**
+ * resource.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
+
 // Things this should support
 // 1. if-modified-since
 // 2. etag

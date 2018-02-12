@@ -1,4 +1,11 @@
 "use strict";
+/**
+ * router.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
 
 let {URL} = require('url');
 const URITemplate = require('uri-templates');
@@ -81,9 +88,9 @@ module.exports = class Router {
     
     /**
      * Attempts to locate a resource for the provided url.
-     * @param {*} url a URL object
-     * @throws TypeError if the URI is not a valid URL
-     * @throws InputValidationError if we located a matching route, but the urls uri params did not match the url schema
+     * @param {string} url - a URL object
+     * @throws {TypeError} if the URI is not a valid URL
+     * @throws {InputValidationError} if we located a matching route, but the urls uri params did not match the url schema
      * @return An object with two properties. Resource, which is the relevant Resource object for this route. urlParams which is an object containing all the url params and values in url.
      */
     async locateResource(url) {        

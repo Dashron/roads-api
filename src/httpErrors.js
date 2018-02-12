@@ -1,3 +1,12 @@
+"use strict";
+/**
+ * httpErrors.js
+ * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * MIT Licensed
+ * 
+ * 
+ */
+
 let Response = require('./response.js');
 
 let HTTPError = class HTTPError extends Error {
