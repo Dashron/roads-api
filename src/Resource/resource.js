@@ -78,8 +78,15 @@ const globalDefaults = {
     }
 };
 
+
 module.exports = class Resource {
-    // todo: it would be cool if we could expose "expected url parameters" in a way that slots well with the router and raises warnings
+    /**
+     * Creates an instance of Resource.
+     * 
+     * @todo it would be cool if we could expose "expected url parameters" in a way that slots well with the router and raises warnings
+     * @param {object} configDefaults 
+     * @param {array} supportedActions 
+     */
     constructor (configDefaults, supportedActions) {
         this._actions = {};
 
@@ -104,8 +111,8 @@ module.exports = class Resource {
     /**
      * Add a single action to this resource.
      * 
-     * @param {any} action 
-     * @param {any} [config={}] 
+     * @param {string} action 
+     * @param {object} [config={}] 
      */
     addAction (action, config = {}) {
         this._actions[action] = config;
@@ -114,8 +121,8 @@ module.exports = class Resource {
     /**
      * Sets the schema of the query parameters this resource accepts
      * 
-     * @param {any} schema 
-     * @param {any} requiredProperties 
+     * @param {object} schema 
+     * @param {array} requiredProperties 
      */
     setSearchSchema (schema, requiredProperties) {
         this._searchSchema = schema;
@@ -125,11 +132,11 @@ module.exports = class Resource {
     /**
      * Performs your API action for a specific HTTP request on this resource
      * 
-     * @param {*} method HTTP Method
-     * @param {*} urlObject This should be the standard URL object. Search params are located here.
-     * @param {*} urlParams This should be an object containing all parameter parts of the url.
-     * @param {*} requestBody This should be a string representation of the request body.
-     * @param {*} requestHeaders This should be an object containing all request headers.
+     * @param {string} method HTTP Method
+     * @param {URL} urlObject This should be the standard URL object. Search params are located here.
+     * @param {object} urlParams This should be an object containing all parameter parts of the url.
+     * @param {string} requestBody This should be a string representation of the request body.
+     * @param {object} requestHeaders This should be an object containing all request headers.
      */
     async resolve (method, urlObject, urlParams, requestBody, requestHeaders) {
         if (!(urlObject instanceof URL)) {
@@ -207,7 +214,7 @@ module.exports = class Resource {
     /**
      * Find the appropriate resource action for this HTTP method
      * 
-     * @param {*} method 
+     * @param {string} method 
      */
     getActionForMethod(method) {
         let actions = Object.keys(this._actions);
@@ -240,8 +247,8 @@ module.exports = class Resource {
      * If there is not one explicitly set, it checks the cross-action config defaults configured via the resource constructor
      * If there is not one in the cross-action config defaults it checks global defaults
      * 
-     * @param {*} action 
-     * @param {*} field
+     * @param {string} action 
+     * @param {string} field
      */
     _getActionConfig (action, field) {
         if (typeof(this._actions[action][field]) !== "undefined") {

@@ -1,5 +1,6 @@
 TODO:
 0. defaultRequestMediaType should be optional, and shouldn't throw an error (resource.resolve)
+0. I don't think the response content type is being set properly
 1. Lower level Resource unit tests
 2. Lower level Representation unit tests
 3. Better docs

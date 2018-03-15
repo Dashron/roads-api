@@ -16,6 +16,7 @@ let { InvalidRequestError } = require('../httpErrors.js');
  * 
  * 
  * @todo thorough examples of the representation format
+ * @todo tests
 */
 module.exports = class JSONRepresentation extends Representation {
     /**
@@ -24,11 +25,19 @@ module.exports = class JSONRepresentation extends Representation {
      * Currently the schema is a subset of JSON schema (top level must be an object, no references, adds resolve and set methods)
      * 
      * @param {object} schema - A JSONRepresentation schema.
+     * @param {object} schemaValidatorOptions - An object that is provided to the schema validation system to allow for easy expansion. See AJV's options for more details (https://github.com/epoberezkin/ajv#options).
      */
-    constructor (schema) {
+    constructor (schema, schemaValidatorOptions) {
         super();
         this._schema = schema;
         this._requestBody = '';
+        this._schemaValidatorOptions = schemaValidatorOptions || {};
+
+        // These are important for some of the way we interact with AJV
+        this._schemaValidatorOptions.allErrors = true;
+        this._schemaValidatorOptions.verbose = true;
+        this._schemaValidatorOptions.async = "es7";
+        this._schemaValidatorOptions.removeAdditional = false;
     }
 
     /**
@@ -57,7 +66,7 @@ module.exports = class JSONRepresentation extends Representation {
      * @returns {*} The JSON representation for these models. Stringified if stringify=true
      */
     render (models, auth, stringify = true) {
-        let output = this._renderSchema(this.getSchema(), models, auth, 'resolve');
+        let output = this._renderSchema(this.getSchema(), models, auth);
         
         if (stringify) {
             output = JSON.stringify(output);
@@ -92,6 +101,15 @@ module.exports = class JSONRepresentation extends Representation {
         }
     }
 
+    _canBeRendered(schema) {
+        // we can render strings numbers and missing types if there is a resolve method
+        return (["string", "number", undefined].indexOf(schema.type) >= 0 && schema.resolve) || 
+        // we can render array items if there is a resolveArrayItems method
+            (schema.type === "array" && schema.resolveArrayItems) || 
+        // we will attempt to render all objects
+            (schema.type === "object");
+    }
+
     /**
      * Turns an array of models into a JSON representation
      * 
@@ -122,7 +140,9 @@ module.exports = class JSONRepresentation extends Representation {
         let obj = {};
     
         for (let property in properties) {
-            obj[property] = this._renderSchema(properties[property], models, auth);
+            if (this._canBeRendered(properties[property])) {
+                obj[property] = this._renderSchema(properties[property], models, auth);
+            }
         }
     
         return obj;
@@ -159,12 +179,7 @@ module.exports = class JSONRepresentation extends Representation {
      * @throws {ValidationError} if the request body is not valid against the schema
      */
     async _validateInput(requestBody) {
-        var ajv = new Ajv({ // todo: this ajv config should be somewhere else
-            allErrors: true,
-            verbose: true,
-            async: "es7",
-            removeAdditional: false
-        });
+        var ajv = new Ajv(this._schemaValidatorOptions);
 
         // We want read only fields to be rejected on input, so we add custom validation
         ajv.addKeyword('readOnly', {
@@ -255,6 +270,15 @@ module.exports = class JSONRepresentation extends Representation {
         return items;
     }*/
     
+    _canBeEdited(schema) {
+        // we can set strings numbers and missing types if there is a set method
+        return (["string", "number", undefined].indexOf(schema.type) >= 0 && schema.set) || 
+        // we can render array items if there is a resolveArrayItems method
+            //(schema.type === "array" && schema.resolveArrayItems) || 
+        // we will attempt to set all objects properties
+            (schema.type === "object");
+    }
+
     /**
      * Applies the edit requests in the provided object to the models based on the set methods in the properties
      * 
@@ -265,7 +289,9 @@ module.exports = class JSONRepresentation extends Representation {
      */
     _applyRequestProperties (properties, requestBody, models, auth) {    
         for (let property in properties) {
-            this._applyRequest(properties[property], requestBody[property], models, auth);
+            if (this._canBeEdited(properties[property])) {
+                this._applyRequest(properties[property], requestBody[property], models, auth);
+            }
         }
     }
 };
