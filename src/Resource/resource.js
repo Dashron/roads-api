@@ -159,7 +159,7 @@ module.exports = class Resource {
              * If the credentials are not provided, the client should return "null"
              * If the credentials are invalid, the client should throw an error (TODO: What error?)
              */
-            let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION], 
+            let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION.toLowerCase()], 
                 this._getActionConfig(action, 'authRequired'), 
                 this._getActionConfig(action, 'authSchemes'));
             
@@ -316,7 +316,7 @@ module.exports = class Resource {
         }
 
         // if we have no auth and it's required, we fall through to the UnauthorizedError
-        throw new UnauthorizedError('Unsupported authorization scheme', authSchemes[0]);
+        throw new UnauthorizedError('Unsupported authorization scheme', Object.keys(authSchemes)[0]);
     }
 
     /**
