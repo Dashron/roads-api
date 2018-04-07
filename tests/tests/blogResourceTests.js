@@ -56,7 +56,7 @@ exports['Test GET Resource execution'] = function (test) {
         },
         undefined, 
         {
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         }, {
             status: 200,
             body: JSON.stringify({ id: 12345, title: 'hello', post: "the body" }),
@@ -77,7 +77,7 @@ exports['Test GET Collection Resource execution'] = function (test) {
         undefined,
         undefined, 
         {
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         }, {
             status: 200,
             body: JSON.stringify({
@@ -107,7 +107,7 @@ exports['Test valid POST Resource execution'] = function (test) {
             post: "my blog post"
         }, {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         }, {
             status: 201,
             body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"},{"id":12346,"title":"new title","post":"my blog post"}],"perPage":10,"page":1}),
@@ -134,7 +134,7 @@ exports['Test Invalid POST Resource execution'] = function (test) {
             post:"New post contents"
         }, {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         }, 
         "Invalid request body",
         test
@@ -157,7 +157,7 @@ exports['Test valid PATCH Resource execution'] = function (test) {
             title: "new edited title"
         }, {
             "Content-Type": "application/merge-patch+json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         }, {
             status: 200,
             body: JSON.stringify({ id: 12345, title: 'new edited title', post: "the body" }),
@@ -184,7 +184,7 @@ exports['Test Invalid PATCH Resource execution'] = function (test) {
             post:"New post contents"
         }, {
             "Content-Type": "application/merge-patch+json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         }, 
         "Invalid request body",
         test
@@ -206,7 +206,7 @@ exports['Test Valid DELETE Resource execution passes'] = function (test) {
         undefined, 
         {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         }, {
             status: 204,
             body: '',

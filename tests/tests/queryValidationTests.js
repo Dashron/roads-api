@@ -54,7 +54,7 @@ exports['Test query validation single parameters'] = function (test) {
         undefined,
         {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         },
         {
             status: 200,
@@ -79,7 +79,7 @@ exports['Test query validation fails on single parameters'] = function (test) {
         undefined,
         {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         },
         "Invalid Search Query",
         test
@@ -100,7 +100,7 @@ exports['Test query validation fails for additional properties'] = function (tes
         undefined,
         {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         },
         "Invalid Search Query",
         test
@@ -121,7 +121,7 @@ exports['Test query validation passes for required properties'] = function (test
         undefined,
         {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         },
         {
             status: 200,
@@ -146,7 +146,7 @@ exports['Test query validation fails for missing required properties'] = functio
         undefined,
         {
             "Content-Type": "application/json",
-            Authorization: 'Bearer abcde'
+            authorization: 'Bearer abcde'
         },
         "Invalid Search Query",
         test
