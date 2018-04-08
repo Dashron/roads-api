@@ -13,11 +13,26 @@ let HTTPError = class HTTPError extends Error {
     constructor (message) {
         super(message);
         this.status = 500;
+        this._additionalProblems = [];
     }
 
     toResponse() {
+        let payload = this._buildPayload();
+
         // Problem details JSON format: https://tools.ietf.org/html/rfc7807
-        return new Response(this.status, JSON.stringify({
+        return new Response(this.status, JSON.stringify(payload));
+    }
+
+    addAdditionalProblem(problem) {
+        if (!(problem instanceof HTTPError)) {
+            throw new Error('Invalid additional problem');
+        }
+
+        this._additionalProblems.push(problem);
+    }
+
+    _buildPayload() {
+        return {
             // URI identifier, should resolve to human readable documentation
             //type: '',
             // Short, human readable message
@@ -27,8 +42,22 @@ let HTTPError = class HTTPError extends Error {
             // Human readable explanation
             //details: '',
             // URI Identifier that may or may not resolve to docs
-            //instance: ''
-        }));
+            //instance: '',
+            "additional-problems": this._buildAdditionalProblems()
+        };
+    }
+
+    _buildAdditionalProblems() {
+        if (this._additionalProblems.length === 0) {
+            return [];
+        }
+
+        let problems = [];
+        for (let i = 0; i < this._additionalProblems.length; i++) {
+            problems.push(this._additionalProblems[i]._buildPayload());
+        }
+
+        return problems;
     }
 };
 

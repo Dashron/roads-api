@@ -17,13 +17,17 @@ function fixBody(body) {
     return body.toString();
 }
 
-function ensureInvalidRequest(resource, method, url, urlParams, body, headers, message, test) {
+function ensureInvalidRequest(resource, method, url, urlParams, body, headers, message, test, additionalProblems) {
     body = fixBody(body);
+    if (!additionalProblems) {
+        additionalProblems = [];
+    }
+    
     return resource.resolve(method, url, urlParams, body, headers)
     .then((response) => {
         test.deepEqual(response, {
             status: 400,
-            body: JSON.stringify({ title: message, status: 400 }),
+            body: JSON.stringify({ title: message, status: 400, "additional-problems": additionalProblems  }),
             headers: {} 
         });
     })

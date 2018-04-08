@@ -8,12 +8,18 @@
  */
 
 const {
-    InvalidRequestError
+    InvalidRequestError,
+    HTTPError
 } = require('../httpErrors.js');
 
 module.exports = class ValidationError extends InvalidRequestError {
     constructor(message, fieldErrors) {
         super(message);
-        this.fieldErrors = fieldErrors;
+
+        if (fieldErrors) {
+            fieldErrors.forEach((error) => {
+                this.addAdditionalProblem(error);
+            });
+        }
     }
 }

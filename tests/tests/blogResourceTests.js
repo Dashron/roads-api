@@ -19,13 +19,17 @@ function fixBody(body) {
     return body.toString();
 }
 
-function ensureInvalidRequest(resource, method, url, urlParams, body, headers, message, test) {
+function ensureInvalidRequest(resource, method, url, urlParams, body, headers, message, test, additionalProblems) {
     body = fixBody(body);
+    if (!additionalProblems) {
+        additionalProblems = [];
+    }
+
     return resource.resolve(method, url, urlParams, body, headers)
     .then((response) => {
         test.deepEqual(response, {
             status: 400,
-            body: JSON.stringify({ title: message, status: 400 }),
+            body: JSON.stringify({ title: message, status: 400, "additional-problems": additionalProblems }),
             headers: {} 
         });
     })
@@ -113,7 +117,8 @@ exports['Test valid POST Resource execution'] = function (test) {
             body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"},{"id":12346,"title":"new title","post":"my blog post"}],"perPage":10,"page":1}),
             headers: {} 
         },
-        test
+        test,
+        [{"title":"should pass \"readOnly\" keyword validation","status":400,"additional-problems":[]}]
     )
     .then(() => {
         test.done();
@@ -137,7 +142,8 @@ exports['Test Invalid POST Resource execution'] = function (test) {
             authorization: 'Bearer abcde'
         }, 
         "Invalid request body",
-        test
+        test,
+        [{"title":"should pass \"readOnly\" keyword validation","status":400,"additional-problems":[]}]
     )
     .then(() => {
         test.done();
@@ -187,7 +193,8 @@ exports['Test Invalid PATCH Resource execution'] = function (test) {
             authorization: 'Bearer abcde'
         }, 
         "Invalid request body",
-        test
+        test,
+        [{"title":"should pass \"readOnly\" keyword validation","status":400,"additional-problems":[]}]
     )
     .then(() => {
         test.done();

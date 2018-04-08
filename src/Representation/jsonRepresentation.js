@@ -209,7 +209,13 @@ module.exports = class JSONRepresentation extends Representation {
 
         if (!isValid) {
             // https://tools.ietf.org/html/rfc5789#section-2.2
-            throw new ValidationError('Invalid request body', compiledSchema.errors);
+            let errors = [];
+
+            compiledSchema.errors.forEach((error) => {
+                errors.push(new ValidationError(error.message));
+            });
+
+            throw new ValidationError('Invalid request body', errors);
         }
 
         return requestBody;
