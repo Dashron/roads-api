@@ -212,7 +212,7 @@ module.exports = class JSONRepresentation extends Representation {
             let errors = [];
 
             compiledSchema.errors.forEach((error) => {
-                errors.push(new ValidationError(error.message));
+                errors.push(new ValidationError(error.message, error.schemaPath));
             });
 
             throw new ValidationError('Invalid request body', errors);

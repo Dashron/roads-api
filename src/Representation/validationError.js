@@ -16,10 +16,18 @@ module.exports = class ValidationError extends InvalidRequestError {
     constructor(message, fieldErrors) {
         super(message);
 
-        if (fieldErrors) {
+        if (Array.isArray(fieldErrors)) {
             fieldErrors.forEach((error) => {
                 this.addAdditionalProblem(error);
             });
+        } else {
+            this.fieldName = fieldErrors;
         }
+    }
+
+    _buildPayload() {
+        let payload = super._buildPayload();
+        payload.field = this.fieldName;
+        return payload;
     }
 }

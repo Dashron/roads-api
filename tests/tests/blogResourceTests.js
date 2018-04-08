@@ -118,7 +118,7 @@ exports['Test valid POST Resource execution'] = function (test) {
             headers: {} 
         },
         test,
-        [{"title":"should pass \"readOnly\" keyword validation","status":400,"additional-problems":[]}]
+        [{"title":"should pass \"readOnly\" keyword validation","status":400,"field": "#/properties/id/readOnly", "additional-problems":[]}]
     )
     .then(() => {
         test.done();
@@ -143,7 +143,7 @@ exports['Test Invalid POST Resource execution'] = function (test) {
         }, 
         "Invalid request body",
         test,
-        [{"title":"should pass \"readOnly\" keyword validation","status":400,"additional-problems":[]}]
+        [{"title":"should pass \"readOnly\" keyword validation","status":400, "additional-problems":[], "field": "#/properties/id/readOnly"}]
     )
     .then(() => {
         test.done();
@@ -194,7 +194,7 @@ exports['Test Invalid PATCH Resource execution'] = function (test) {
         }, 
         "Invalid request body",
         test,
-        [{"title":"should pass \"readOnly\" keyword validation","status":400,"additional-problems":[]}]
+        [{"title":"should pass \"readOnly\" keyword validation","status":400,"additional-problems":[], "field": "#/properties/id/readOnly"}]
     )
     .then(() => {
         test.done();
