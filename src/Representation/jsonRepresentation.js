@@ -26,8 +26,9 @@ module.exports = class JSONRepresentation extends Representation {
      * 
      * @param {object} schema - A JSONRepresentation schema.
      * @param {object} schemaValidatorOptions - An object that is provided to the schema validation system to allow for easy expansion. See AJV's options for more details (https://github.com/epoberezkin/ajv#options).
+     * @param {object} defaults - An object that allows the implementor to provide some default functionality. Currently this supports a "set" and "resolve" fallback for schemas.
      */
-    constructor (schema, schemaValidatorOptions) {
+    constructor (schema, schemaValidatorOptions, defaults) {
         super();
         this._schema = schema;
         this._requestBody = '';
@@ -38,6 +39,9 @@ module.exports = class JSONRepresentation extends Representation {
         this._schemaValidatorOptions.verbose = true;
         this._schemaValidatorOptions.async = "es7";
         this._schemaValidatorOptions.removeAdditional = false;
+        
+        // Fallbacks for various sections of the representation
+        this._defaults = defaults;
     }
 
     /**
@@ -67,7 +71,7 @@ module.exports = class JSONRepresentation extends Representation {
      */
     render (models, auth, stringify = true) {
         let output = this._renderSchema(this.getSchema(), models, auth);
-        
+
         if (stringify) {
             output = JSON.stringify(output);
         }
@@ -81,17 +85,27 @@ module.exports = class JSONRepresentation extends Representation {
      * @param {object} schema 
      * @param {*} models 
      * @param {*} auth 
+     * @param {string} key this value is included when resolving fields 
      * @todo this is very similar to the applyEdit method, maybe we can merge them
      * @todo schema type is invalid, it can be an array of types. Also it might interact weird with oneOf, allOf, etc.
      * @returns {*} the JSON representation for the provided models
      * @throws {Error} if the schema type is not understood by this library
      */
-    _renderSchema (schema, models, auth) {
+    _renderSchema (schema, models, auth, key) {
         switch (schema.type) {
             case "string":
             case "number":
             case undefined:
-                return schema.resolve(models, auth);
+                // If the implementor has a resolve method on the schema, use that
+                if (schema.resolve) {
+                    return schema.resolve(models, auth);
+                // if there is no schema level resolve, but there's a default resolve, use that
+                } else if (this._defaults.resolve) {
+                    return this._defaults.resolve(models, auth, key);
+                // if no resolve function could be found, error
+                } else {
+                    throw new Error('No resolver found for this schema');
+                }
             case "array":
                 return this._renderSchemaArray(schema.items, schema.resolveArrayItems(models, auth), auth);
             case "object":
@@ -103,7 +117,7 @@ module.exports = class JSONRepresentation extends Representation {
 
     _canBeRendered(schema) {
         // we can render strings numbers and missing types if there is a resolve method
-        return (["string", "number", undefined].indexOf(schema.type) >= 0 && schema.resolve) || 
+        return ((["string", "number", undefined].indexOf(schema.type) >= 0) && (schema.resolve || (this._defaults && this._defaults.resolve))) || 
         // we can render array items if there is a resolveArrayItems method
             (schema.type === "array" && schema.resolveArrayItems) || 
         // we will attempt to render all objects
@@ -122,7 +136,7 @@ module.exports = class JSONRepresentation extends Representation {
         let items = [];
 
         modelItems.forEach((item) => {
-            items.push(this._renderSchema(schemaItems, item, auth));
+            items.push(schemaItems.render(item, auth, false));
         });
     
         return items;
@@ -141,7 +155,7 @@ module.exports = class JSONRepresentation extends Representation {
     
         for (let property in properties) {
             if (this._canBeRendered(properties[property])) {
-                obj[property] = this._renderSchema(properties[property], models, auth);
+                obj[property] = this._renderSchema(properties[property], models, auth, property);
             }
         }
     
@@ -243,7 +257,7 @@ module.exports = class JSONRepresentation extends Representation {
      * @todo this is very similar to the render method, maybe we can merge them
      * @todo schema type is invalid, it can be an array of types. Also it might interact weird with oneOf, allOf, etc.
      */
-    _applyRequest (schema, requestBody, models, auth) {
+    _applyRequest (schema, requestBody, models, auth, key) {
         if (typeof(requestBody) === "undefined") {
             return;
         }
@@ -252,7 +266,17 @@ module.exports = class JSONRepresentation extends Representation {
             case "string":
             case "number":
             case undefined:
-                schema.set(models, requestBody, auth);
+                // If the implementor has a set method on the schema, use that
+                if (schema.set) {
+                    return schema.set(models, requestBody, auth);
+                // if there is no schema level set, but there's a default set, use that
+                } else if (this._defaults.set) {
+                    return this._defaults.set(models, requestBody, auth, key);
+                // if no set function could be found, error
+                } else {
+                    throw new Error('No set found for this schema');
+                }
+                schema
                 break;
             case "array":
                 throw new Error('Arrays are yet supported in input schemas');
@@ -278,7 +302,7 @@ module.exports = class JSONRepresentation extends Representation {
     
     _canBeEdited(schema) {
         // we can set strings numbers and missing types if there is a set method
-        return (["string", "number", undefined].indexOf(schema.type) >= 0 && schema.set) || 
+        return ((["string", "number", undefined].indexOf(schema.type) >= 0) && (schema.set || (this._defaults && this._defaults.set))) || 
         // we can render array items if there is a resolveArrayItems method
             //(schema.type === "array" && schema.resolveArrayItems) || 
         // we will attempt to set all objects properties
@@ -296,7 +320,7 @@ module.exports = class JSONRepresentation extends Representation {
     _applyRequestProperties (properties, requestBody, models, auth) {    
         for (let property in properties) {
             if (this._canBeEdited(properties[property])) {
-                this._applyRequest(properties[property], requestBody[property], models, auth);
+                this._applyRequest(properties[property], requestBody[property], models, auth, property);
             }
         }
     }

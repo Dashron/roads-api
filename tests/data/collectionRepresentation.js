@@ -10,7 +10,7 @@ module.exports = function (itemRepresentation, resolveArrayItems) {
                 "properties": {
                     "data": {
                         "type": "array",
-                        "items": itemRepresentation.getSchema(),
+                        "items": itemRepresentation,
                         "resolveArrayItems": resolveArrayItems
                     },
                     "perPage": {

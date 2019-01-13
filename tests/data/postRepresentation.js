@@ -24,16 +24,17 @@ module.exports = class PostRepresentation extends JSONRepresentation {
                     }
                 },
                 "post": {
-                    "type": "string",
-                    "resolve": (models) => {
-                        return models.post;
-                    },
-                    "set": (models, post, requestAuth) => {
-                        models.post = post;
-                    }
+                    "type": "string"
                 }
             },
             "additionalProperties": false
+        }, undefined, {
+            resolve: (models, auth, key) => {
+                return models[key];
+            },
+            set: (models, requestBody, auth, key) => {
+                models[key] = requestBody;
+            }
         });
 
         this.setRequestBody(requestBody);
