@@ -88,7 +88,45 @@ describe('router tests', () => {
             }
         });
 
-        return expect(router.locateResource(new URL('http://api.dashron.com/posts/abcd'))).rejects.toBeInstanceOf(InputValidationError);
+        return expect(router.locateResource(new URL('http://api.dashron.com/posts/abcd'))).resolves.toEqual(false);
+    });
+
+    test('Test failed parameter validation passes on to subsequent resources', function () {
+        expect.assertions(1);
+
+        let router = new Router();
+        let resource = new PostResource('number resource');
+
+        router.addResource('/posts/{post_id}', resource, {
+            urlParams: {
+                schema: {
+                    post_id: {
+                        type: "number"
+                    }
+                },
+                required: ['post_id']
+            }
+        });
+
+        let resource2 = new PostResource('string resource');
+
+        router.addResource('/posts/{post_id}', resource2, {
+            urlParams: {
+                schema: {
+                    post_id: {
+                        type: "string"
+                    }
+                },
+                required: ['post_id']
+            }
+        });
+
+        return expect(router.locateResource(new URL('http://api.dashron.com/posts/abcd'))).resolves.toEqual({
+            resource: resource2,
+            urlParams: {
+                post_id: "abcd"
+            }
+        });
     });
 
     test('Test sub_route with missing required parameter fails', function () {
@@ -109,7 +147,7 @@ describe('router tests', () => {
         });
 
         // TODO: Ensure we have the correct validation reason, post_id missing, not invalid number
-        return expect(router.locateResource(new URL('http://api.dashron.com/posts/'))).rejects.toBeInstanceOf(InputValidationError);
+        return expect(router.locateResource(new URL('http://api.dashron.com/posts/'))).resolves.toEqual(false);
     });
 
     test('Test sub_route with missing optional parameter works', function () {
@@ -135,8 +173,6 @@ describe('router tests', () => {
     });
 
     test('Test required string sub route fails with empty param', function () {
-        expect.assertions(1);
-
         let router = new Router();
         let resource = new PostResource();
 
@@ -151,7 +187,7 @@ describe('router tests', () => {
             }
         });
 
-        return expect(router.locateResource(new URL('http://api.dashron.com/posts/'))).rejects.toBeInstanceOf(InputValidationError);
+        return expect(router.locateResource(new URL('http://api.dashron.com/posts/'))).resolves.toEqual(false);
     });
 
     test('Test optional string sub route passes with empty param', function () {

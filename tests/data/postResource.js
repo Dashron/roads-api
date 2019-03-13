@@ -7,7 +7,7 @@ const { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } = require('../../index.js').
 let posts = require('./blogStorage.js');
 
 module.exports = class PostResource extends Resource {
-    constructor() {
+    constructor(label) {
         //TODO: Make is post change this whole resource to append only
         super({
             authSchemes: { [AUTH_BEARER]: require('./tokenResolver.js') },
@@ -21,6 +21,11 @@ module.exports = class PostResource extends Resource {
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });
+
+        // This is a quick hack to easily differentiate between two differenet post resources
+        if (label) {
+            this.label = label;
+        }
     }
 
     modelsResolver(urlParams) {

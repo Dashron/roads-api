@@ -114,7 +114,8 @@ module.exports = class Router {
                     await validateObj(urlParams, this._routes[i].config.urlParams.schema, this._routes[i].config.urlParams.required);
                 } catch (e) {
                     if (e instanceof InputValidationError) {
-                        throw new InputValidationError('Invalid URL Parameters', e);
+                        // If the fields aren't valid, this route isn't a match. We might have another match down the chain.
+                        continue;
                     }
         
                     throw e;
