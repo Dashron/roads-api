@@ -196,7 +196,7 @@ module.exports = class JSONRepresentation extends Representation {
         var ajv = new Ajv(this._schemaValidatorOptions);
 
         // We want read only fields to be rejected on input, so we add custom validation
-        ajv.addKeyword('readOnly', {
+        ajv.addKeyword('roadsReadOnly', {
             validate: function (sch, parentSchema) {
                 if (sch) {
                     return false;
