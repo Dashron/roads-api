@@ -13,6 +13,7 @@ module.exports = class PostResource extends Resource {
             authSchemes: { [AUTH_BEARER]: require('./tokenResolver.js') },
             responseMediaTypes: { [MEDIA_JSON]: require('./postRepresentation.js') },
             defaultResponseMediaType: MEDIA_JSON,
+            defaultRequestMediaType: MEDIA_JSON,
             authRequired: true,
         }, ["get", "delete"]);
         

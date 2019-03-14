@@ -11,7 +11,8 @@ let {URL} = require('url');
 const URITemplate = require('uri-templates');
 const validateObj = require('./objectValidator.js');
 const {
-    InputValidationError
+    InputValidationError,
+    NotFoundError
 } = require('./httpErrors.js');
 
 /**
@@ -59,32 +60,6 @@ module.exports = class Router {
             resource: resource
         });
     }
-
-    /**
-     * Roads middleware to receive HTTP requests and return resource representations
-     * 
-     * @param {any} method 
-     * @param {any} fullUrl 
-     * @param {any} body 
-     * @param {any} headers 
-     * @returns 
-     */
-    async middleware(method, requestUrl, body, headers) {
-        if (! (requestUrl instanceof URL)) {
-            requestUrl = new URL(requestUrl, this._baseUrl);
-        }
-
-        let {
-                resource,
-                url
-        } = this.locateResource(requestUrl);
-
-        if (!resource) {
-            return;
-        }
-
-        return await resource.resolve(method, url, body, headers);
-    }
     
     /**
      * Attempts to locate a resource for the provided url.
@@ -131,5 +106,26 @@ module.exports = class Router {
         }
 
         return false;
+    }
+    
+    middleware (protocol, hostname) {
+        let router = this;
+        return async function (requestMethod, requestUrl, requestBody, requestHeaders) {
+            requestUrl = new URL(protocol + hostname + requestUrl);
+        
+            let routeResponse = await router.locateResource(requestUrl);
+
+            if (!routeResponse) {
+                // Currently the roads and roads-api response objects are different, so we have to do this jank.
+                // todo: share responses (or maybe all errors) across both projects
+                // todo: maybe this should just return, and let followup middleware handle missed routes?
+                let apiResponse = (new NotFoundError("Not Found")).toResponse();
+                return new this.Response(apiResponse.body, apiResponse.status, apiResponse.headers);
+            }
+        
+            let resource = new routeResponse.resource();
+            let response = await resource.resolve(requestMethod, requestUrl, routeResponse.urlParams, requestBody, requestHeaders);
+            return new this.Response(response.body, response.status, response.headers);
+        };
     }
 };

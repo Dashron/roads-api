@@ -49,32 +49,38 @@ const globalDefaults = {
     get: {
         method: METHOD_GET,
         status: 200,
-        requestMediaTypes: {}
+        requestMediaTypes: {},
+        allowRequestBody: false
     },
     append: {
         method: METHOD_POST,
         status: 201,
-        requestMediaTypes: {}
+        requestMediaTypes: {},
+        allowRequestBody: true
     },
     submit: {
         method: METHOD_POST,
         status: 201,
-        requestMediaTypes: {}
+        requestMediaTypes: {},
+        allowRequestBody: true
     },
     fullReplace: {
         method: METHOD_PUT,
         status: 200,
-        requestMediaTypes: {}
+        requestMediaTypes: {},
+        allowRequestBody: true
     },
     partialEdit: {
         method: METHOD_PATCH,
         status: 200,
-        requestMediaTypes: {}
+        requestMediaTypes: {},
+        allowRequestBody: true
     },
     "delete": {
         method: METHOD_DELETE,
         status: 204,
-        requestMediaTypes: {}
+        requestMediaTypes: {},
+        allowRequestBody: true
     }
 };
 
@@ -143,6 +149,10 @@ module.exports = class Resource {
             throw new TypeError('You must provide a URL object to the resolve method');
         }
 
+        if (!requestHeaders) {
+            requestHeaders = {};
+        }
+
         try {
             let action = this.getActionForMethod(method);
 
@@ -163,7 +173,7 @@ module.exports = class Resource {
                 this._getActionConfig(action, 'authRequired'), 
                 this._getActionConfig(action, 'authSchemes'));
             
-            if (requestBody) {
+            if (requestBody && this._getActionConfig(action, 'allowRequestBody')) {
                 /*
                 * Identify the proper request representation from the accept header
                 */
