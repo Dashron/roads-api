@@ -62,6 +62,15 @@ module.exports = class JSONRepresentation extends Representation {
     }
 
     /**
+     * Directly access the values in the request body
+     * 
+     * @param {object} requestBody 
+     */
+    getRequestBody (requestBody) {
+        return this._requestBody;
+    }
+
+    /**
      * Receives models and auth, and returns the appropriate JSON representation
      * 
      * @param {*} models 
