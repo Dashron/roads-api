@@ -169,7 +169,7 @@ module.exports = class Resource {
              * If the credentials are not provided, the client should return "null"
              * If the credentials are invalid, the client should throw an error (TODO: What error?)
              */
-            let requestAuth = this._getAuth(requestHeaders[HEADER_AUTHORIZATION.toLowerCase()], 
+            let requestAuth = await this._getAuth(requestHeaders[HEADER_AUTHORIZATION.toLowerCase()], 
                 this._getActionConfig(action, 'authRequired'), 
                 this._getActionConfig(action, 'authSchemes'));
             
@@ -295,7 +295,7 @@ module.exports = class Resource {
      * @param {any} validSchemes 
      * @returns 
      */
-    _getAuth(authorizationHeader, authRequired, authSchemes) {
+    async _getAuth(authorizationHeader, authRequired, authSchemes) {
         let auth = null;
 
         // If this resource requires authentication, we enforce that behavior here
@@ -313,7 +313,7 @@ module.exports = class Resource {
             parameters
         } = authParser(authorizationHeader, Object.keys(authSchemes));
 
-        auth = authSchemes[scheme](parameters);
+        auth = await authSchemes[scheme](parameters);
         
         // If we have auth details, return it
         if (auth !== null) {
