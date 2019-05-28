@@ -102,26 +102,7 @@ module.exports = {
             return header;
         }
     },
-    MethodNotAllowedError: class MethodNotAllowedError extends HTTPError {
-        constructor (validMethods) {
-            super(validMethods.join(', '));
-            this.status = 405;
-        }
-    },
-    // 406
-    NotAcceptableError: class NotAcceptableError extends HTTPError {
-        constructor (message) {
-            super(message);
-            this.status = 406;
-        }
-    },
-    //404
-    NotFoundError: class NotFoundError extends HTTPError {
-        constructor (message) {
-            super(message);
-            this.status = 404;
-        }
-    },
+    
     // 400
     InvalidRequestError: class InvalidRequestError extends HTTPError {
         constructor (message) {
@@ -130,6 +111,39 @@ module.exports = {
         }
     },
 
+    // 403
+    ForbiddenError: class ForbiddenError extends HTTPError {
+        constructor (message) {
+            super(message);
+            this.status = 403;
+        }
+    },
+
+    //404
+    NotFoundError: class NotFoundError extends HTTPError {
+        constructor (message) {
+            super(message);
+            this.status = 404;
+        }
+    },
+
+    // 405
+    MethodNotAllowedError: class MethodNotAllowedError extends HTTPError {
+        constructor (validMethods) {
+            super(validMethods.join(', '));
+            this.status = 405;
+        }
+    },
+    
+    // 406
+    NotAcceptableError: class NotAcceptableError extends HTTPError {
+        constructor (message) {
+            super(message);
+            this.status = 406;
+        }
+    },
+
+    // 422
     UnprocessableEntityError: class UnprocessableEntityError extends HTTPError {
         constructor (message) {
             super(message);
