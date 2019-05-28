@@ -316,7 +316,7 @@ module.exports = class Resource {
         auth = await authSchemes[scheme](parameters);
         
         // If we have auth details, return it
-        if (auth !== null) {
+        if (auth !== null && auth != undefined) {
             return auth;
         }
 
