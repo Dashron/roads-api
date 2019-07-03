@@ -8,8 +8,7 @@
  */
 
 const {
-    InvalidRequestError,
-    HTTPError
+    InvalidRequestError
 } = require('../httpErrors.js');
 
 module.exports = class ValidationError extends InvalidRequestError {

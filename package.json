@@ -1,10 +1,10 @@
 {
   "name": "roads-api",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest tests/"
+    "test": "node node_modules/jest/bin/jest.js tests/"
   },
   "repository": {
     "type": "git",
@@ -22,11 +22,11 @@
     "ajv": "6.10.0",
     "auth-header": "1.0.0",
     "content-type": "^1.0.4",
-    "roads": "^5.0.0-beta.1",
+    "roads": "^5.0.0-beta.10",
     "uri-templates": "^0.2.0"
   },
   "devDependencies": {
-    "jest": "24.7.1",
+    "jest": "24.8.0",
     "request": "^2.34"
   }
 }
