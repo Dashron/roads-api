@@ -30,7 +30,7 @@ function ensureInvalidRequest(resource, method, url, urlParams, body, headers, m
         expect(response).toEqual({
             status: 400,
             body: JSON.stringify({ title: message, status: 400, "additional-problems": additionalProblems }),
-            headers: {} 
+            headers: {"content-type": "application/json"} 
         });
     });
 }
@@ -60,7 +60,7 @@ describe('blog resource tests', () => {
             }, {
                 status: 200,
                 body: JSON.stringify({ id: 12345, title: 'hello', post: "the body" }),
-                headers: {} 
+                headers: {"content-type": "application/json"}
             }
         );
     });
@@ -83,7 +83,7 @@ describe('blog resource tests', () => {
                     perPage: 10,
                     page: 1
                 }),
-                headers: {} 
+                headers: {"content-type": "application/json"}
             }
         );
 
@@ -107,7 +107,7 @@ describe('blog resource tests', () => {
             }, {
                 status: 201,
                 body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"},{"id":12346,"title":"new title","post":"my blog post"}],"perPage":10,"page":1}),
-                headers: {} 
+                headers: {"content-type": "application/json"}
             },
             [{"title":"should pass \"roadsReadOnly\" keyword validation","status":400,"field": "#/properties/id/roadsReadOnly", "additional-problems":[]}]
         );
@@ -155,7 +155,7 @@ describe('blog resource tests', () => {
             }, {
                 status: 200,
                 body: JSON.stringify({ id: 12345, title: 'new edited title', post: "the body" }),
-                headers: {} 
+                headers: {"content-type": "application/json"}
             }
         );
     });
@@ -201,7 +201,7 @@ describe('blog resource tests', () => {
             }, {
                 status: 204,
                 body: '',
-                headers: {} 
+                headers: {"content-type": "application/json"}
             }
         );
     });

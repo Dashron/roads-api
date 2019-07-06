@@ -20,7 +20,9 @@ let HTTPError = class HTTPError extends Error {
         let payload = this._buildPayload();
 
         // Problem details JSON format: https://tools.ietf.org/html/rfc7807
-        return new Response(this.status, JSON.stringify(payload));
+        return new Response(this.status, JSON.stringify(payload), {
+            "content-type": "application/json"
+        });
     }
 
     addAdditionalProblem(problem) {

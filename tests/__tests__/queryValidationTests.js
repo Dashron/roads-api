@@ -28,7 +28,7 @@ function ensureInvalidRequest(resource, method, url, urlParams, body, headers, m
         expect(response).toEqual({
             status: 400,
             body: JSON.stringify({ title: message, status: 400, "additional-problems": additionalProblems  }),
-            headers: {} 
+            headers: {"content-type": "application/json"} 
         });
     });
 }
@@ -61,7 +61,7 @@ describe('queryValidationTests', () => {
             {
                 status: 200,
                 body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"}],"perPage":10,"page":1}),
-                headers: {} 
+                headers: {"content-type": "application/json"} 
             }
         );
     });
@@ -122,7 +122,7 @@ describe('queryValidationTests', () => {
             {
                 status: 200,
                 body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"}],"perPage":10,"page":1}),
-                headers: {} 
+                headers: {"content-type": "application/json"} 
             }
         );
     });

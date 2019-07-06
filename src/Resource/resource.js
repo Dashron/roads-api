@@ -206,16 +206,19 @@ module.exports = class Resource {
             /*
              * Find the appropriate resource representation for this resource, and the client's request
              */
-            let responseMediaHandler = new (this._getResponseMediaHandler(requestHeaders[HEADER_ACCEPT], 
-                this._getActionConfig(action, 'defaultResponseMediaType'), 
-                this._getActionConfig(action, 'responseMediaTypes')))();
+            let acceptedContentType = Accept.charset(requestHeaders[HEADER_ACCEPT] || 
+                this._getActionConfig(action, 'defaultResponseMediaType'), Object.keys(this._getActionConfig(action, 'responseMediaTypes')));
+
+            let responseMediaHandler = new (this._getResponseMediaHandler(acceptedContentType, this._getActionConfig(action, 'responseMediaTypes')))();
 
             /**
              * Perform the HTTP action and get the response
              */
             await this[action](models, requestBody, requestAuth);
             // todo: find a less janky way to handle this method===delete response handler
-            return new Response(this._getActionConfig(action, 'status'), method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth));
+            return new Response(this._getActionConfig(action, 'status'), method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth), {
+                "content-type": acceptedContentType
+            });
         } catch (e) {
             return this._buildErrorResponse(e);
         }
@@ -336,8 +339,7 @@ module.exports = class Resource {
      * @param {*} representations 
      * @param {*} defaultMediaType 
      */
-    _getResponseMediaHandler(acceptHeader, defaultMediaType, representations) {
-        let acceptedContentType = Accept.charset(acceptHeader || defaultMediaType, Object.keys(representations));
+    _getResponseMediaHandler(acceptedContentType, representations) {
         return this._getMediaHandler(acceptedContentType, representations, () => {
             // If we could not meet their accept list, fail.
             throw new NotAcceptableError('No acceptable media types for this resource.');

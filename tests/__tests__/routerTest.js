@@ -218,7 +218,7 @@ describe('router tests', () => {
             id: 12345,
             title: "hello",
             post: "the body"
-        }), 200, {}));
+        }), 200, {"content-type": "application/json"}));
     });
 
     test('Test middleware responds successfully on one resource miss', function () {
@@ -247,7 +247,7 @@ describe('router tests', () => {
             title: "Not Found",
             status: 404,
             "additional-problems": []
-        }), 404, {}));
+        }), 404, {"content-type": "application/json"}));
     });
 
     test('Test middleware responds successfully on one resource miss, and one resource hit', function () {
@@ -287,7 +287,7 @@ describe('router tests', () => {
             id: 1,
             title: "hello",
             post: "the body"
-        }), 200, {}));
+        }), 200, {"content-type": "application/json"}));
     });
 
     // TODO: Write a test like "test middleware responds successfully on resource hit" that tests if one fails, and then tests again if there are two, the first fails, the second succeeds. test for both urls and just url param validation differences.
