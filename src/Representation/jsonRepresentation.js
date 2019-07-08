@@ -39,6 +39,7 @@ module.exports = class JSONRepresentation extends Representation {
         this._schemaValidatorOptions.verbose = true;
         this._schemaValidatorOptions.async = "es7";
         this._schemaValidatorOptions.removeAdditional = false;
+        this._schemaValidatorOptions.jsonPointers = true;
         
         // Fallbacks for various sections of the representation
         this._defaults = defaults;
@@ -235,7 +236,7 @@ module.exports = class JSONRepresentation extends Representation {
             let errors = [];
 
             compiledSchema.errors.forEach((error) => {
-                errors.push(new ValidationError(error.message, error.schemaPath));
+                errors.push(new ValidationError(error.message, error.dataPath));
             });
 
             throw new ValidationError('Invalid request body', errors);

@@ -108,8 +108,7 @@ describe('blog resource tests', () => {
                 status: 201,
                 body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"},{"id":12346,"title":"new title","post":"my blog post"}],"perPage":10,"page":1}),
                 headers: {"content-type": "application/json"}
-            },
-            [{"title":"should pass \"roadsReadOnly\" keyword validation","status":400,"field": "#/properties/id/roadsReadOnly", "additional-problems":[]}]
+            }
         );
     });
 
@@ -132,7 +131,7 @@ describe('blog resource tests', () => {
                 authorization: 'Bearer abcde'
             }, 
             "Invalid request body",
-            [{"title":"should pass \"roadsReadOnly\" keyword validation","status":400, "additional-problems":[], "field": "#/properties/id/roadsReadOnly"}]
+            [{"title":"should pass \"roadsReadOnly\" keyword validation","status":400, "additional-problems":[], "field": "/id"}]
         );
     });
 
@@ -179,7 +178,7 @@ describe('blog resource tests', () => {
                 authorization: 'Bearer abcde'
             }, 
             "Invalid request body",
-            [{"title":"should pass \"roadsReadOnly\" keyword validation","status":400,"additional-problems":[], "field": "#/properties/id/roadsReadOnly"}]
+            [{"title":"should pass \"roadsReadOnly\" keyword validation","status":400,"additional-problems":[], "field": "/id"}]
         );
     });
 
