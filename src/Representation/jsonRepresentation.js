@@ -38,7 +38,7 @@ module.exports = class JSONRepresentation extends Representation {
         this._schemaValidatorOptions.allErrors = true;
         this._schemaValidatorOptions.verbose = true;
         this._schemaValidatorOptions.async = "es7";
-        this._schemaValidatorOptions.removeAdditional = false;
+        this._schemaValidatorOptions.removeAdditional = "failing";
         this._schemaValidatorOptions.jsonPointers = true;
         
         // Fallbacks for various sections of the representation
@@ -207,10 +207,11 @@ module.exports = class JSONRepresentation extends Representation {
 
         // We want read only fields to be rejected on input, so we add custom validation
         ajv.addKeyword('roadsReadOnly', {
-            validate: function (sch, parentSchema) {
-                if (sch) {
+            validate: function (schema, data) {
+                if (data) {
                     return false;
                 }
+
                 return true;
             }
             // is this the better way to do read only? The following didn't work on the first attempt, will come back later
@@ -236,7 +237,14 @@ module.exports = class JSONRepresentation extends Representation {
             let errors = [];
 
             compiledSchema.errors.forEach((error) => {
-                errors.push(new ValidationError(error.message, error.dataPath));
+                // if the error is a missing required field, we don't have a data path. the conditional below changes that to the value located in 
+                let dataPath = error.dataPath;
+
+                if (error.keyword === 'required') {
+                    dataPath += '/' + error.params.missingProperty;
+                }
+
+                errors.push(new ValidationError(error.message, dataPath));
             });
 
             throw new ValidationError('Invalid request body', errors);

@@ -217,7 +217,8 @@ describe('router tests', () => {
         })).resolves.toEqual(new Response(JSON.stringify({
             id: 12345,
             title: "hello",
-            post: "the body"
+            post: "the body", 
+            "nestingTest": {"nestedField": "nestedValue"}
         }), 200, {"content-type": "application/json"}));
     });
 
@@ -286,7 +287,8 @@ describe('router tests', () => {
         })).resolves.toEqual(new Response(JSON.stringify({
             id: 1,
             title: "hello",
-            post: "the body"
+            post: "the body", 
+            "nestingTest": {"nestedField": "nestedValue"}
         }), 200, {"content-type": "application/json"}));
     });
 

@@ -60,7 +60,13 @@ describe('queryValidationTests', () => {
             },
             {
                 status: 200,
-                body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"}],"perPage":10,"page":1}),
+                body: JSON.stringify({"data":[
+                    {"id":1,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":2,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":3,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":4,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":12345,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}}
+                ],"perPage":10,"page":1}),
                 headers: {"content-type": "application/json"} 
             }
         );
@@ -121,7 +127,13 @@ describe('queryValidationTests', () => {
             },
             {
                 status: 200,
-                body: JSON.stringify({"data":[{"id":1,"title":"hello","post":"the body"},{"id":2,"title":"hello","post":"the body"},{"id":3,"title":"hello","post":"the body"},{"id":4,"title":"hello","post":"the body"},{"id":12345,"title":"hello","post":"the body"}],"perPage":10,"page":1}),
+                body: JSON.stringify({"data":[
+                    {"id":1,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":2,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":3,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":4,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":12345,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}}
+                ],"perPage":10,"page":1}),
                 headers: {"content-type": "application/json"} 
             }
         );

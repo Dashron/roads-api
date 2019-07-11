@@ -11,14 +11,14 @@ module.exports = class PostResource extends Resource {
         //TODO: Make is post change this whole resource to append only
         super({
             authSchemes: { [AUTH_BEARER]: require('./tokenResolver.js') },
-            responseMediaTypes: { [MEDIA_JSON]: require('./postRepresentation.js') },
+            responseMediaTypes: { [MEDIA_JSON]: require('./postRepresentation.js')() },
             defaultResponseMediaType: MEDIA_JSON,
             defaultRequestMediaType: MEDIA_JSON,
             authRequired: true,
         }, ["get", "delete"]);
         
         this.addAction("partialEdit", {
-            requestMediaTypes: { [MEDIA_JSON_MERGE]: require('./postRepresentation.js') },
+            requestMediaTypes: { [MEDIA_JSON_MERGE]: require('./postRepresentation.js')() },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });

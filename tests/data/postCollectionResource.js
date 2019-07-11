@@ -12,7 +12,7 @@ module.exports = class PostResource extends Resource {
         super({
             authSchemes: { [AUTH_BEARER]: require('./tokenResolver.js') },
             responseMediaTypes: { 
-                [MEDIA_JSON]: require('./collectionRepresentation.js')(new (require('./postRepresentation.js'))(), 
+                [MEDIA_JSON]: require('./collectionRepresentation.js')(new (require('./postRepresentation.js')())(), 
                 (models) => {
                     return models.posts;
                 })
@@ -22,7 +22,7 @@ module.exports = class PostResource extends Resource {
         }, ["get"]);
 
         this.addAction("append", {
-            requestMediaTypes: { [MEDIA_JSON]: require('./postRepresentation.js') },
+            requestMediaTypes: { [MEDIA_JSON]: require('./postRepresentation.js')("append") },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON
         });
@@ -71,6 +71,10 @@ module.exports = class PostResource extends Resource {
 
     // maybe this should just live on the request body?
     append (models, requestBody, auth) {
+        if (requestBody.getRequestBody().whatever) {
+            throw new Error('unwanted extra parameter made it through validation');
+        }
+
         models = requestBody.append(models, auth);
         models.save();
     }
