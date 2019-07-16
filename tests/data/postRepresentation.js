@@ -27,6 +27,15 @@ module.exports = (mode) => {
                     "post": {
                         "type": "string"
                     },
+                    "active": {
+                        "type": "boolean",
+                        "resolve": (models) => {
+                            return models.active === 1 ? true : false;
+                        },
+                        "set": (models, active, requestAuth) => {
+                            models.active = active ? 1 : 0;
+                        }
+                    },
                     /* Trying to test to see if the new error system works properly on nested values. We are prepending a slash to solve the current naming weirdness
                     but I don't think that will work for the following.*/
                     // TODO: Update all responses to reflect this nested response. We should keep it for future testing, and ensure the response generation accurate.
@@ -49,7 +58,7 @@ module.exports = (mode) => {
                     }
                 },
                 "additionalProperties": false,
-                "required": mode === "append" ? ['title', 'post', 'nestingTest'] : []
+                "required": mode === "append" ? ['title', 'post', 'nestingTest', 'active'] : []
             }, undefined, {
                 resolve: (models, auth, key) => {
                     return models[key];

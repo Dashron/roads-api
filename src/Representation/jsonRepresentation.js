@@ -105,6 +105,7 @@ module.exports = class JSONRepresentation extends Representation {
         switch (schema.type) {
             case "string":
             case "number":
+            case "boolean":
             case undefined:
                 // If the implementor has a resolve method on the schema, use that
                 if (schema.resolve) {
@@ -127,7 +128,7 @@ module.exports = class JSONRepresentation extends Representation {
 
     _canBeRendered(schema) {
         // we can render strings numbers and missing types if there is a resolve method
-        return ((["string", "number", undefined].indexOf(schema.type) >= 0) && (schema.resolve || (this._defaults && this._defaults.resolve))) || 
+        return ((["string", "number", "boolean", undefined].indexOf(schema.type) >= 0) && (schema.resolve || (this._defaults && this._defaults.resolve))) || 
         // we can render array items if there is a resolveArrayItems method
             (schema.type === "array" && schema.resolveArrayItems) || 
         // we will attempt to render all objects
@@ -283,6 +284,7 @@ module.exports = class JSONRepresentation extends Representation {
         switch (schema.type) {
             case "string":
             case "number":
+            case "boolean":
             case undefined:
                 // If the implementor has a set method on the schema, use that
                 if (schema.set) {
@@ -319,8 +321,8 @@ module.exports = class JSONRepresentation extends Representation {
     }*/
     
     _canBeEdited(schema) {
-        // we can set strings numbers and missing types if there is a set method
-        return ((["string", "number", undefined].indexOf(schema.type) >= 0) && (schema.set || (this._defaults && this._defaults.set))) || 
+        // we can set strings, numbers, booleans and missing types if there is a set method
+        return ((["string", "number", "boolean", undefined].indexOf(schema.type) >= 0) && (schema.set || (this._defaults && this._defaults.set))) || 
         // we can render array items if there is a resolveArrayItems method
             //(schema.type === "array" && schema.resolveArrayItems) || 
         // we will attempt to set all objects properties

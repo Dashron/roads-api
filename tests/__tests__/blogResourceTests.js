@@ -59,7 +59,7 @@ describe('blog resource tests', () => {
                 authorization: 'Bearer abcde'
             }, {
                 status: 200,
-                body: JSON.stringify({ id: 12345, title: 'hello', post: "the body", "nestingTest": {"nestedField": "nestedValue"}}),
+                body: JSON.stringify({ id: 12345, title: 'hello', post: "the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}}),
                 headers: {"content-type": "application/json"}
             }
         );
@@ -79,11 +79,11 @@ describe('blog resource tests', () => {
             }, {
                 status: 200,
                 body: JSON.stringify({
-                    data: [{"id":1,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":2,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":3,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":4,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12345,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}}],
+                    data: [{"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":12345,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}}],
                     perPage: 10,
                     page: 1
                 }),
@@ -105,19 +105,20 @@ describe('blog resource tests', () => {
             {
                 title: "new title",
                 post: "my blog post", 
-                nestingTest: {"nestedField": "nestedValue"}
+                nestingTest: {"nestedField": "nestedValue"},
+                active: true
             }, {
                 "Content-Type": "application/json",
                 authorization: 'Bearer abcde'
             }, {
                 status: 201,
                 body: JSON.stringify({"data":[
-                    {"id":1,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":2,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":3,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":4,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12345,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12346,"title":"new title","post":"my blog post", "nestingTest": {"nestedField": "nestedValue"}}
+                    {"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":12345,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":12346,"title":"new title","post":"my blog post", "active": true, "nestingTest": {"nestedField": "nestedValue"}}
                 ],"perPage":10,"page":1}),
                 headers: {"content-type": "application/json"}
             }
@@ -137,19 +138,20 @@ describe('blog resource tests', () => {
                 title: "new title",
                 post: "my blog post", 
                 nestingTest: {"nestedField": "nestedValue"},
-                whatever: "stuff"
+                whatever: "stuff",
+                active: true
             }, {
                 "Content-Type": "application/json",
                 authorization: 'Bearer abcde'
             }, {
                 status: 201,
                 body: JSON.stringify({"data":[
-                    {"id":1,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":2,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":3,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":4,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12345,"title":"hello","post":"the body", "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12346,"title":"new title","post":"my blog post", "nestingTest": {"nestedField": "nestedValue"}}
+                    {"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":12345,"title":"hello","post":"the body","active": true,  "nestingTest": {"nestedField": "nestedValue"}},
+                    {"id":12346,"title":"new title","post":"my blog post", "active": true, "nestingTest": {"nestedField": "nestedValue"}}
                 ]
                 ,"perPage":10,"page":1}),
                 headers: {"content-type": "application/json"}
@@ -173,6 +175,7 @@ describe('blog resource tests', () => {
             "Invalid request body",
             [{"title":"should have required property 'title'", "status":400,"additional-problems":[], "field": '/title'},
              {"title":"should have required property 'post'", "status":400, "additional-problems":[], "field": '/post'},
+             {"title":"should have required property 'active'", "status":400, "additional-problems":[], "field": '/active'},
              {"title":"should have required property 'nestingTest'", "status": 400, "additional-problems":[], "field": "/nestingTest"}],
         );
     });
@@ -197,6 +200,7 @@ describe('blog resource tests', () => {
             "Invalid request body",
             [{"title":"should have required property 'title'", "status":400,"additional-problems":[], "field": '/title'},
              {"title":"should have required property 'post'", "status":400, "additional-problems":[], "field": '/post'},
+             {"title":"should have required property 'active'", "status":400, "additional-problems":[], "field": '/active'},
              {"title":"should have required property 'nestedField'", "status": 400, "additional-problems":[], "field": "/nestingTest/nestedField"}],
         );
     });
@@ -213,7 +217,8 @@ describe('blog resource tests', () => {
                 title: "New Name", 
                 id: 5, 
                 post:"New post contents", 
-                nestingTest: {"nestedField": "nestedValue"}
+                nestingTest: {"nestedField": "nestedValue"},
+                active: true
             }, {
                 "Content-Type": "application/json",
                 authorization: 'Bearer abcde'
@@ -264,7 +269,7 @@ describe('blog resource tests', () => {
                 authorization: 'Bearer abcde'
             }, {
                 status: 200,
-                body: JSON.stringify({ id: 12345, title: 'new edited title', post: "the body", "nestingTest": {"nestedField": "nestedValue"} }),
+                body: JSON.stringify({ id: 12345, title: 'new edited title', post: "the body", "active": true, "nestingTest": {"nestedField": "nestedValue"} }),
                 headers: {"content-type": "application/json"}
             }
         );

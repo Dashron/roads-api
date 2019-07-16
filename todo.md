@@ -2,6 +2,7 @@ TODO:
 0. defaultRequestMediaType should be optional, and shouldn't throw an error (resource.resolve)
 0. I don't think the response content type is being set properly
 0. I don't think throwing http errors for certain status codes is the correct path anymore. Maybe it's fine for roads-api, but for core web roads it causes confusion where you need to catch errors and where you need to watch for certain status codes.
+0. don't send a content-type header if there's no response body (particularly with 204 responses) I THINK. Check spec
 1. Lower level Resource unit tests
 2. Lower level Representation unit tests
 3. Better docs

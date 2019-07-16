@@ -218,6 +218,7 @@ describe('router tests', () => {
             id: 12345,
             title: "hello",
             post: "the body", 
+            "active": true, 
             "nestingTest": {"nestedField": "nestedValue"}
         }), 200, {"content-type": "application/json"}));
     });
@@ -288,6 +289,7 @@ describe('router tests', () => {
             id: 1,
             title: "hello",
             post: "the body", 
+            "active": true, 
             "nestingTest": {"nestedField": "nestedValue"}
         }), 200, {"content-type": "application/json"}));
     });
