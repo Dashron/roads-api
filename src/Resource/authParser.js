@@ -13,11 +13,11 @@ const {
     AUTH_BASIC,
     AUTH_BEARER,
     AUTH_MAC
-} = require('../constants.js');
+} = require('../core/constants.js');
 
 const {
     UnauthorizedError
-} = require('../httpErrors.js');
+} = require('../core/httpErrors.js');
 
 const schemeParser = {
     [AUTH_BASIC]: (token) => {

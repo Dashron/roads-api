@@ -1,4 +1,3 @@
-"use strict";
 /**
  * constants.js
  * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
@@ -7,7 +6,7 @@
  * 
  */
 
-module.exports = {
+let constants = {
     METHOD_GET: 'GET',
     METHOD_PUT: 'PUT',
     METHOD_POST: 'POST',
@@ -25,3 +24,5 @@ module.exports = {
     AUTH_BEARER: 'Bearer',
     AUTH_MAC: 'Mac'
 };
+
+export default constants;

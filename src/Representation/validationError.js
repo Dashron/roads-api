@@ -9,7 +9,7 @@
 
 const {
     InvalidRequestError
-} = require('../httpErrors.js');
+} = require('../core/httpErrors.js');
 
 module.exports = class ValidationError extends InvalidRequestError {
     constructor(message, fieldErrors) {

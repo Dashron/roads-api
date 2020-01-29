@@ -10,7 +10,7 @@
 let Ajv = require('ajv');
 let Representation = require('./representation.js');
 let ValidationError = require('./validationError.js');
-let { InvalidRequestError } = require('../httpErrors.js');
+let { InvalidRequestError } = require('../core/httpErrors.js');
 
 /**
  * 

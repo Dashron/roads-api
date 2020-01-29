@@ -7,13 +7,10 @@
  * 
  */
 
-let {URL} = require('url');
-const URITemplate = require('uri-templates');
-const validateObj = require('./objectValidator.js');
-const {
-    InputValidationError,
-    NotFoundError
-} = require('./httpErrors.js');
+import { URL } from 'url';
+import URITemplate from 'uri-templates';
+import validateObj from './objectValidator';
+import { InputValidationError, NotFoundError } from './httpErrors';
 
 /**
  * This is an interesting one. So the uri-templates fromURI function will return an empty string in the following case

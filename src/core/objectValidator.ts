@@ -7,14 +7,18 @@
  * 
  */
 
-let Ajv = require('ajv');
+import Ajv from 'ajv';
 
-const {
-    InputValidationError
-} = require('./httpErrors.js');
+import { InputValidationError } from './httpErrors';
 
-function buildSchema(propertiesSchema, requiredProperties) {
-    let schema = {
+function buildSchema(propertiesSchema: object, requiredProperties: Array<string>) {
+    let schema: {
+        $async: boolean,
+        type: string,
+        properties: object,
+        additionalProperties: boolean,
+        required?: Array<string>
+    } = {
         $async: true,
         type: "object",
         properties: propertiesSchema,
@@ -33,7 +37,7 @@ function buildSchema(propertiesSchema, requiredProperties) {
  * @param {*} propertiesSchema the "properties" section of a JSON schema document. Array or object subschemas will fail
  * @param {*} searchParams 
  */
-module.exports = async function validateObject(obj, propertiesSchema, requiredProperties) {
+export default async function validateObject(obj: any, propertiesSchema: object, requiredProperties: Array<string>) {
     var ajv = new Ajv({ // todo: this ajv config should be somewhere else
         allErrors: true,
         verbose: true,

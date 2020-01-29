@@ -16,9 +16,9 @@
 
 const authParser = require('./authParser.js');
 const ContentType = require('content-type');
-const Response = require('../response.js');
+const Response = require('../core/response.js');
 const Accept = require('accept');
-const validateObj = require('../objectValidator.js');
+const validateObj = require('../core/objectValidator.js');
 
 const { 
     URLSearchParams,
@@ -34,7 +34,7 @@ const {
     HEADER_CONTENT_TYPE,
     HEADER_AUTHORIZATION,
     HEADER_ACCEPT
-} = require('../constants.js');
+} = require('../core/constants.js/index.js');
 
 const {
     UnauthorizedError,
@@ -43,7 +43,7 @@ const {
     InputValidationError,
     UnsupportedMediaTypeError,
     MethodNotAllowedError
-} = require('../httpErrors.js');
+} = require('../core/httpErrors.js/index.js');
 
 const globalDefaults = {
     get: {
