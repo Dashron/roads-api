@@ -5,19 +5,16 @@
  *
  *
  */
-declare let constants: {
-    METHOD_GET: string;
-    METHOD_PUT: string;
-    METHOD_POST: string;
-    METHOD_PATCH: string;
-    METHOD_DELETE: string;
-    HEADER_CONTENT_TYPE: string;
-    HEADER_AUTHORIZATION: string;
-    HEADER_ACCEPT: string;
-    MEDIA_JSON: string;
-    MEDIA_JSON_MERGE: string;
-    AUTH_BASIC: string;
-    AUTH_BEARER: string;
-    AUTH_MAC: string;
-};
-export default constants;
+export declare const METHOD_GET = "GET";
+export declare const METHOD_PUT = "PUT";
+export declare const METHOD_POST = "POST";
+export declare const METHOD_PATCH = "PATCH";
+export declare const METHOD_DELETE = "DELETE";
+export declare const HEADER_CONTENT_TYPE = "Content-Type";
+export declare const HEADER_AUTHORIZATION = "Authorization";
+export declare const HEADER_ACCEPT = "Accept";
+export declare const MEDIA_JSON = "application/json";
+export declare const MEDIA_JSON_MERGE = "application/merge-patch+json";
+export declare const AUTH_BASIC = "Basic";
+export declare const AUTH_BEARER = "Bearer";
+export declare const AUTH_MAC = "Mac";

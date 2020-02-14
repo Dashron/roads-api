@@ -1,4 +1,3 @@
-"use strict";
 /**
  * authParser.js
  * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
@@ -19,13 +18,15 @@ const {
     UnauthorizedError
 } = require('../core/httpErrors.js');
 
-const schemeParser = {
-    [AUTH_BASIC]: (token) => {
+interface SchemeParser { (token: string): any };
+
+const schemeParsers: { [x: string]: SchemeParser } = {
+    [AUTH_BASIC]: (token: string) => {
         let username = null;
         let password = null;
 
         try {
-            [username, password] = Buffer(token, 'base64').toString().split(':', 2);
+            [username, password] = Buffer.from(token, 'base64').toString().split(':', 2);
         } catch (e) {
             throw new UnauthorizedError('Invalid basic authorization syntax', AUTH_BASIC);
         }
@@ -35,7 +36,7 @@ const schemeParser = {
             password: password
         };
     },
-    [AUTH_BEARER]: (token) => {
+    [AUTH_BEARER]: (token: string) => {
         return token;
     }/*,
     [AUTH_MAC]: (token) => {
@@ -47,18 +48,15 @@ const schemeParser = {
  * 
  * @param {*} authHeader 
  */
-function authParser (authHeader, validSchemes) {
+export default function authParser (authHeader: string, validSchemes: Array<string>) {
     let {scheme, token, params} = Authorization.parse(authHeader);
 
-    if (schemeParser[scheme] && (validSchemes.indexOf(scheme) !== -1)) {
+    if (schemeParsers[scheme] && (validSchemes.indexOf(scheme) !== -1)) {
         return {
             scheme: scheme,
-            parameters: schemeParser[scheme](token, params)
+            parameters: schemeParsers[scheme](token)
         };
     }
 
     throw new UnauthorizedError('Unsupported authorization scheme: ' + scheme, validSchemes[0]);
 }
-
-
-module.exports = authParser;

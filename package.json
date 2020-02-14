@@ -18,19 +18,19 @@
   },
   "homepage": "https://github.com/Dashron/roads-api#readme",
   "dependencies": {
-    "accept": "^3.0.2",
-    "accepts": "1.3.7",
+    "@hapi/accept": "5.0.1",
     "ajv": "6.11.0",
     "auth-header": "1.0.0",
-    "content-type": "^1.0.4",
-    "roads": "^6.0.1",
+    "content-type": "1.0.4",
+    "roads": "6.0.1",
     "uri-templates": "^0.2.0"
   },
   "devDependencies": {
     "jest": "25.1.0",
-    "request": "^2.34",
-    "ts-jest": "^25.0.0",
-    "@types/node": "^12.12.14",
-    "@types/uri-templates": "0.1.28"
+    "request": "2.88.2",
+    "ts-jest": "25.2.0",
+    "@types/node": "12.12.14",
+    "@types/uri-templates": "0.1.30",
+    "@types/content-type": "1.1.3"
   }
 }

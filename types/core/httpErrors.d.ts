@@ -6,7 +6,7 @@
  *
  */
 import { Response } from 'roads';
-interface ProblemPayload {
+export interface ProblemPayload {
     title: string;
     status: number;
     "additional-problems": Array<ProblemPayload>;
@@ -21,13 +21,13 @@ export declare class HTTPError extends Error {
     protected buildAdditionalProblems(): Array<ProblemPayload>;
 }
 export declare class UnsupportedMediaTypeError extends HTTPError {
-    constructor(message: string);
+    constructor(contentType: string);
 }
 export declare class UnauthorizedError extends HTTPError {
     type: string;
-    realm: string;
-    charset: string;
-    constructor(message: string, type: string, realm: string, charset: string);
+    realm?: string;
+    charset?: string;
+    constructor(message: string, type: string, realm?: string, charset?: string);
     toResponse(): Response;
     buildWWWAuthenticateHeader(): string;
 }
@@ -52,4 +52,3 @@ export declare class UnprocessableEntityError extends HTTPError {
 export declare class InputValidationError extends module.exports.InvalidRequestError {
     constructor(message: string, fieldErrors: Array<string>);
 }
-export {};

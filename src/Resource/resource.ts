@@ -1,4 +1,3 @@
-"use strict";
 /**
  * resource.js
  * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
@@ -14,18 +13,18 @@
 // 4. accept input via one of many media types
 // 5. patch media types (configurable)
 
-const authParser = require('./authParser.js');
-const ContentType = require('content-type');
-const Response = require('../core/response.js');
-const Accept = require('accept');
-const validateObj = require('../core/objectValidator.js');
+import authParser from './authParser';
+import ContentType, { MediaType } from 'content-type';
+import * as Accept from '@hapi/accept';
+import validateObj from '../core/objectValidator.js';
+import { Response } from 'roads';
 
-const { 
+import { 
     URLSearchParams,
     URL
-} = require('url');
+} from 'url';
 
-const {
+import {
     METHOD_GET,
     METHOD_PUT,
     METHOD_POST,
@@ -34,18 +33,20 @@ const {
     HEADER_CONTENT_TYPE,
     HEADER_AUTHORIZATION,
     HEADER_ACCEPT
-} = require('../core/constants.js/index.js');
+} from '../core/constants';
 
-const {
+import {
     UnauthorizedError,
     NotAcceptableError,
     HTTPError,
     InputValidationError,
     UnsupportedMediaTypeError,
     MethodNotAllowedError
-} = require('../core/httpErrors.js/index.js');
+} from '../core/httpErrors';
 
-const globalDefaults = {
+import Representation, { WritableRepresentation, ReadableRepresentation, ReadableRepresentationConstructor, WritableRepresentationConstructor } from '../Representation/representation';
+
+const globalDefaults: { [action: string]: ActionConfig } = {
     get: {
         method: METHOD_GET,
         status: 200,
@@ -84,17 +85,44 @@ const globalDefaults = {
     }
 };
 
+type RequestMediaTypeList = { [type: string]: WritableRepresentationConstructor }
+type ResponseMediaTypeList = { [type: string]: ReadableRepresentationConstructor }
+type AuthSchemeList = { [scheme: string]: Function };
 
-module.exports = class Resource {
+type ActionConfig = {
+    method?: string,
+    status?: number,
+    requestMediaTypes?: RequestMediaTypeList,
+    allowRequestBody?: boolean,
+    defaultResponseMediaType?: string,
+    responseMediaTypes?: ResponseMediaTypeList,
+    defaultRequestMediaType?: string,
+    authRequired?: boolean,
+    authSchemes?: AuthSchemeList
+}
+
+type ActionList = { 
+    [action: string]: Action;
+}
+
+type Action = (models: object, requestBody?: object, requestAuth?: any) => Promise<void>;
+
+export default abstract class Resource {
+    protected actionConfigs: {[action: string]: ActionConfig}
+    protected configDefaults: ActionConfig;
+    protected searchSchema: {[x: string]: any} = {};
+    protected requiredSearchProperties?: Array<string>;
+    protected abstract modelsResolver: (urlParams: { [key: string]: string }, searchParams: URLSearchParams, action: keyof ActionList, pathname: string) => object;
+    protected actions: ActionList = {};
+
     /**
      * Creates an instance of Resource.
      * 
      * @todo it would be cool if we could expose "expected url parameters" in a way that slots well with the router and raises warnings
      * @param {object} configDefaults 
-     * @param {array} supportedActions 
+     * @param {array<string>} supportedActions 
      */
-    constructor (configDefaults, supportedActions) {
-        this._actions = {};
+    constructor (configDefaults: ActionConfig, supportedActions: keyof ActionList | Array<keyof ActionList>) {
 
         if (!Array.isArray(supportedActions)) {
             supportedActions = [supportedActions];
@@ -103,25 +131,22 @@ module.exports = class Resource {
         supportedActions.forEach((action) => {
             // Technically I could assign configDefaults here, but it would
             // get a little weird with the other setActions, so I keep this simple
-            this._actions[action] = {};
+            this.actionConfigs[action] = {};
         });
 
         // TODO: If you add both the submit and append actions, you have two POST actions. We should error in that case
-
-
-        this._configDefaults = configDefaults;
-        this._searchSchema = {};
-        this._requiredSearchProperties = null;
+        this.configDefaults = configDefaults;
     }
 
     /**
-     * Add a single action to this resource.
      * 
-     * @param {string} action 
-     * @param {object} [config={}] 
+     * @param name 
+     * @param action 
+     * @param config 
      */
-    addAction (action, config = {}) {
-        this._actions[action] = config;
+    addAction (name: keyof ActionList, action: Action, config: ActionConfig = {}) {
+        this.actionConfigs[name] = config;
+        this.actions[name] = action;
     }
 
     /**
@@ -129,10 +154,11 @@ module.exports = class Resource {
      * 
      * @param {object} schema 
      * @param {array} requiredProperties 
+     * @todo: json schema type
      */
-    setSearchSchema (schema, requiredProperties) {
-        this._searchSchema = schema;
-        this._requiredSearchProperties = requiredProperties;
+    setSearchSchema (schema: {[x: string]: any}, requiredProperties: Array<string>) {
+        this.searchSchema = schema;
+        this.requiredSearchProperties = requiredProperties;
     }
 
     /**
@@ -144,19 +170,11 @@ module.exports = class Resource {
      * @param {string} requestBody This should be a string representation of the request body.
      * @param {object} requestHeaders This should be an object containing all request headers.
      */
-    async resolve (method, urlObject, urlParams, requestBody, requestHeaders) {
-        if (!(urlObject instanceof URL)) {
-            throw new TypeError('You must provide a URL object to the resolve method');
-        }
-
-        if (!requestHeaders) {
-            requestHeaders = {};
-        }
-
+    async resolve (method: string, urlObject: URL, urlParams: { [key: string]: string }, requestBody?: string, requestHeaders: {[x: string]: string} = {}) {
         try {
             let action = this.getActionForMethod(method);
 
-            if (!this[action]) {
+            if (!action || typeof(this.actions[action]) !== "function") {
                 throw new MethodNotAllowedError(this.getValidMethods());
             }
 
@@ -169,34 +187,35 @@ module.exports = class Resource {
              * If the credentials are not provided, the client should return "null"
              * If the credentials are invalid, the client should throw an error (TODO: What error?)
              */
-            let requestAuth = await this._getAuth(requestHeaders[HEADER_AUTHORIZATION.toLowerCase()], 
-                this._getActionConfig(action, 'authRequired'), 
-                this._getActionConfig(action, 'authSchemes'));
+            let requestAuth = await this.getAuth(requestHeaders[HEADER_AUTHORIZATION.toLowerCase()], 
+                this.getActionConfig(action, 'authRequired') as boolean, 
+                this.getActionConfig(action, 'authSchemes') as AuthSchemeList);
             
-            if (requestBody && this._getActionConfig(action, 'allowRequestBody')) {
+            let parsedRequestBody: any;
+
+            if (requestBody && this.getActionConfig(action, 'allowRequestBody')) {
                 /*
                 * Identify the proper request representation from the accept header
                 */
-                let RequestMediaHandler = this._getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
-                    this._getActionConfig(action, 'defaultRequestMediaType'), 
-                    this._getActionConfig(action, 'requestMediaTypes'));
+                let RequestMediaHandler = this.getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
+                    this.getActionConfig(action, 'defaultRequestMediaType') as string, 
+                    this.getActionConfig(action, 'requestMediaTypes') as RequestMediaTypeList);
 
-                requestBody = new RequestMediaHandler(requestBody, requestAuth);
-                await requestBody.parseInput(requestAuth);
+                parsedRequestBody = await (new RequestMediaHandler()).parseInput(requestBody);
             } else {
                 /*
                 * Here's a safe short cut if we want the request to still work even though we
                 * can't locate a proper requestRepresentation. In the current code this might
                 * never happen, but I put it here so I don't forget if we want it in the future
                 */
-                requestBody = undefined;
+                parsedRequestBody = undefined;
             }
 
             /*
              * Initates the validation of the query parameters, and if valid sends those parameters to this resources "modelsResolver" function.
              */
-            await this._validateSearchParams(urlObject.searchParams);
-
+            await this.validateSearchParams(urlObject.searchParams);
+``
             /*
              * Locte a collection of models for this request. These models are provided to the action, and are not manipulated in any way by this framework.
              * The API developer should assume that they can do whatever they want with provided models
@@ -207,20 +226,21 @@ module.exports = class Resource {
              * Find the appropriate resource representation for this resource, and the client's request
              */
             let acceptedContentType = Accept.charset(requestHeaders[HEADER_ACCEPT] || 
-                this._getActionConfig(action, 'defaultResponseMediaType'), Object.keys(this._getActionConfig(action, 'responseMediaTypes')));
+                this.getActionConfig(action, 'defaultResponseMediaType') as string, Object.keys(this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList));
 
-            let responseMediaHandler = new (this._getResponseMediaHandler(acceptedContentType, this._getActionConfig(action, 'responseMediaTypes')))();
+            let ResponseMediaHandler = this.getResponseMediaHandler(acceptedContentType, this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList);
+            let responseMediaHandler = new ResponseMediaHandler();
 
             /**
              * Perform the HTTP action and get the response
              */
-            await this[action](models, requestBody, requestAuth);
+            await this.actions[action](models, parsedRequestBody, requestAuth);
             // todo: find a less janky way to handle this method===delete response handler
-            return new Response(this._getActionConfig(action, 'status'), method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth), {
+            return new Response(this.getActionConfig(action, 'status') as string, method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth, true), {
                 "content-type": acceptedContentType
             });
         } catch (e) {
-            return this._buildErrorResponse(e);
+            return this.buildErrorResponse(e);
         }
     }
 
@@ -229,12 +249,10 @@ module.exports = class Resource {
      * 
      * @param {string} method 
      */
-    getActionForMethod(method) {
-        let actions = Object.keys(this._actions);
-        
-        for (let i = 0; i < actions.length; i++) {
-            if (this._getActionConfig(actions[i], 'method') === method) {
-                return actions[i];
+    getActionForMethod(method: string): string | undefined {        
+        for (let action in this.actionConfigs) {
+            if (this.getActionConfig(action, 'method') === method) {
+                return action;
             }
         }
     }
@@ -242,15 +260,14 @@ module.exports = class Resource {
     /**
      * Find all methods that have been enabled for this resource
      */
-    getValidMethods() {
-        let actions = Object.keys(this._actions);
-        let validMethods = [];
+    getValidMethods(): Array<string> {
+        let validMethods: Array<string> = [];
 
-        actions.forEach((action) => {
-            if (this[action]) {
-                validMethods.push(this._getActionConfig(action, 'method'));
+        for (let action in this.actionConfigs) {
+            if (this.actions[action]) {
+                validMethods.push(this.getActionConfig(action, 'method') as string);
             }
-        });
+        };
 
         return validMethods;
     }
@@ -263,14 +280,14 @@ module.exports = class Resource {
      * @param {string} action 
      * @param {string} field
      */
-    _getActionConfig (action, field) {
-        if (typeof(this._actions[action][field]) !== "undefined") {
-            return this._actions[action][field];
+    protected getActionConfig (action: keyof ActionList, field: keyof ActionConfig) {
+        if (typeof(this.actionConfigs[action][field]) !== "undefined") {
+            return this.actionConfigs[action][field];
         }
 
-        // client configurable global defaults across all action
-        if (typeof(this._configDefaults[field]) !== "undefined") {
-            return this._configDefaults[field];
+        // client configurable global defaults across all azaction
+        if (typeof(this.configDefaults[field]) !== "undefined") {
+            return this.configDefaults[field];
         }
 
         // roads defaults for global defaults on a per-action basis
@@ -293,12 +310,12 @@ module.exports = class Resource {
      * 
      * This method will throw an error if the resource is configured to require authentication (via authRequired), and the user is unauthenticated
      * 
-     * @param {any} authorizationHeader 
-     * @param {any} authRequired 
-     * @param {any} validSchemes 
+     * @param {string} authorizationHeader 
+     * @param {boolean} authRequired 
+     * @param {array<string>} validSchemes 
      * @returns 
      */
-    async _getAuth(authorizationHeader, authRequired, authSchemes) {
+    protected async getAuth(authorizationHeader: string, authRequired: boolean, authSchemes: {[x: string]: Function}) {
         let auth = null;
 
         // If this resource requires authentication, we enforce that behavior here
@@ -339,11 +356,12 @@ module.exports = class Resource {
      * @param {*} representations 
      * @param {*} defaultMediaType 
      */
-    _getResponseMediaHandler(acceptedContentType, representations) {
-        return this._getMediaHandler(acceptedContentType, representations, () => {
-            // If we could not meet their accept list, fail.
-            throw new NotAcceptableError('No acceptable media types for this resource.');
-        });
+    protected getResponseMediaHandler(acceptedContentType: string, representations: ResponseMediaTypeList ) {
+        if (acceptedContentType && representations[acceptedContentType]) {
+            return representations[acceptedContentType];
+        }
+        
+        throw new NotAcceptableError('No acceptable media types for this resource.');
     }
 
     /**
@@ -353,54 +371,35 @@ module.exports = class Resource {
      * @param {*} defaultContentType 
      * @param {*} representations 
      */
-    _getRequestMediaHandler(contentTypeHeader, defaultContentType, representations) {        
+    protected getRequestMediaHandler(contentTypeHeader: string | undefined, defaultContentType: string, representations: RequestMediaTypeList ) {        
         let parsedContentType = ContentType.parse(contentTypeHeader || defaultContentType);
-        return this._getMediaHandler(parsedContentType.type, representations, () => {
-            // If we could not meet their accept list, fail.
-            throw new UnsupportedMediaTypeError('This media type is not supported on this endpoint.');
-        });
-    }
 
-    /**
-     * Returns the appropriate representation from the configured list of representations, and the clients accept header.
-     *
-     * @param {*} mediaType The media type of the representation
-     * @param {*} representations an object of media type => representation
-     */
-    _getMediaHandler(mediaType, representations, onMiss) {
-        /**
-         * Ensure that we have a representation for this media type
-         */
-        if (mediaType && representations[mediaType]) {
-            return representations[mediaType];
+        if (parsedContentType.type && representations[parsedContentType.type]) {
+            return representations[parsedContentType.type];
         }
-    
-        return onMiss();
+
+        throw new UnsupportedMediaTypeError('This media type is not supported on this endpoint.');
     }
 
     /**
      * Ensures that the search parameters in the request uri match this resources searchSchema
      * @param {*} searchParams 
      */
-    async _validateSearchParams(searchParams) {
-        if (typeof(searchParams) === 'undefined') {
-            return undefined;
-        }
-
+    protected async validateSearchParams(searchParams: URLSearchParams | object): Promise<any> {
         /*
          * Turn search params into a non-search param object because our schema validation
          * system fails on URLSearchParams
          */
         if (searchParams instanceof URLSearchParams) {
-            let params = {};
+            let params: {[x: string]: any} = {};
         
-            for (let key of searchParams.keys()) {
+            for (let key of (searchParams as URLSearchParams).keys()) {
                 if (params[key]) {
                     // keys returns dupes if the key is there twice, but getAll will return the data we need below so we don't want keys duplicated
                     continue;
                 }
         
-                params[key] = searchParams.getAll(key);
+                params[key] = (searchParams as URLSearchParams).getAll(key);
                 if (params[key].length === 1) {
                     params[key] = params[key][0];
                 }
@@ -414,10 +413,10 @@ module.exports = class Resource {
         }
 
         try {
-            return await validateObj(searchParams, this._searchSchema, this._requiredSearchProperties);
+            return await validateObj(searchParams, this.searchSchema, this.requiredSearchProperties ? this.requiredSearchProperties : []);
         } catch (e) {
-            if (e instanceof InputValidationError) {
-                throw new InputValidationError('Invalid Search Query', e);
+            if (e !instanceof InputValidationError) {
+                throw new InputValidationError('Invalid Search Query', [e.getMessage()]);
             }
 
             throw e;
@@ -431,12 +430,12 @@ module.exports = class Resource {
      * 
      * @param {*} e 
      */
-    _buildErrorResponse(e) {
+    protected  buildErrorResponse(e: Error) {
         if (e instanceof HTTPError) {
-            return e.toResponse();
+            return (e as HTTPError).toResponse();
         }
 
         console.log(e);
-        return new Response(500);
+        return new Response('Unknown error. Please check your logs', 500);
     }
 };

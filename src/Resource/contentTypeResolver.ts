@@ -1,4 +1,3 @@
-"use strict";
 /**
  * contentTypeResolver.js
  * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
@@ -7,20 +6,19 @@
  * 
  */
 
-const contentType = require('content-type');
+import contentType, { ParsedMediaType } from 'content-type';
 
-const {
+import {
     MEDIA_JSON_MERGE,
     MEDIA_JSON
-} = require('../constants.js');
+} from '../core/constants';
 
-const {
-    UnsupportedMediaTypeError,
-    InvalidParameterError
-} = require('../httpErrors.js');
+import {
+    UnsupportedMediaTypeError
+} from '../core/httpErrors';
 
 //const jsonParse = (body) => JSON.parse(body);
-const parsers = {
+const parsers: {[contentType: string]: Function} = {
     [MEDIA_JSON_MERGE]: JSON.parse,
     [MEDIA_JSON]: JSON.parse,
 };
@@ -29,7 +27,7 @@ const parsers = {
  * 
  * @param {*} contentTypeHeader 
  */
-module.exports.parseHeader = (contentTypeHeader) => {
+export function parseHeader (contentTypeHeader: string) {
     return contentType.parse(contentTypeHeader);
 };
 
@@ -38,19 +36,14 @@ module.exports.parseHeader = (contentTypeHeader) => {
  * @param {*} contentType 
  * @param {*} requestBody 
  */
-module.exports.parseBody = (requestBody, parsedContentType) => {
-    // todo: does defaults do this for us now?
-    if (typeof(requestBody) !== "string") {
-        throw new TypeError('Content type resolver\'s parseBody function only supports strings for the requestBody parameter');
-    }
-
+export function parseBody (requestBody: string, parsedContentType: ParsedMediaType) {
     let contentType = parsedContentType.type;
 
-    if (this.isAllowed(contentType)) {
+    if (isAllowed(contentType)) {
         return parsers[contentType](requestBody);
     }
 
-    throw new UnsupportedMediaTypeError();
+    throw new UnsupportedMediaTypeError(contentType);
 };
 
 /**
@@ -59,7 +52,7 @@ module.exports.parseBody = (requestBody, parsedContentType) => {
  * TODO from spec: application/octet-stream can be assumed if no type is provided, or we can try to infer from the content (which should be configurable). https://tools.ietf.org/html/rfc7231#section-3.1.1.5
  * @param {*} contentType
  */
-module.exports.isAllowed = (contentType) => {
+export function isAllowed (contentType: string) {
     if (parsers[contentType]) {
         return true;
     }

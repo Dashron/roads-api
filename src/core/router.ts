@@ -8,9 +8,11 @@
  */
 
 import { URL } from 'url';
-import URITemplate from 'uri-templates';
+import URITemplate, { URITemplate as URITemplateType } from 'uri-templates';
 import validateObj from './objectValidator';
 import { InputValidationError, NotFoundError } from './httpErrors';
+import Resource from '../Resource/resource';
+import { Middleware } from 'roads/types/core/road';
 
 /**
  * This is an interesting one. So the uri-templates fromURI function will return an empty string in the following case
@@ -25,9 +27,9 @@ import { InputValidationError, NotFoundError } from './httpErrors';
  * 
  * template("{/id*}").fromUri("/posts//");
  * 
- * @param {*} obj 
+ * @param {object} obj 
  */
-function delEmptyString(obj) {
+function delEmptyString(obj: {[x: string]: any}) {
     for (let key in obj) {
         if (obj[key] === '') {
             delete obj[key];
@@ -37,25 +39,43 @@ function delEmptyString(obj) {
     return obj;
 }
 
+interface RouteConfig {
+    urlParams: {
+        schema: {[x: string]: any},
+        required: Array<string>
+    }
+}
+
+interface Route {
+    compiledTemplate: URITemplateType,
+    config: RouteConfig,
+    resource: Resource
+}
+
 module.exports = class Router {
-    constructor (baseUrl) {
-        this._routes = [];
-        this._baseUrl = baseUrl;
+    protected routes: Array<Route>;
+    protected baseUrl: string;
+
+    constructor (baseUrl: string) {
+        this.routes = [];
+        this.baseUrl = baseUrl;
     }
 
     /**
      * Assign a resource to a URI template for the middleware, or locateResource method to locate in the future
      * 
-     * @param {*} template URI template
-     * @param {*} resource Resource object
-     * @param {*} config Additional configuration for this route. Currently supports a urlParams object with "schema" and "required" properties. These properties are used alongside the standard objectValidator to validate any URI params.
+     * @param {string} template URI template
+     * @param {Resource} resource Resource object
+     * @param {object} config Additional configuration for this route. Currently supports a urlParams object with "schema" and "required" properties. These properties are used alongside the standard objectValidator to validate any URI params.
      */
-    addResource(template, resource, config) {
-        this._routes.push({
-            compiledTemplate: new URITemplate(template),
-            config: config || {},
+    addResource(template: string, resource: Resource, config: RouteConfig) {
+        let route: Route = {
+            compiledTemplate: URITemplate(template),
+            config: config,
             resource: resource
-        });
+        };
+
+        this.routes.push(route);
     }
     
     /**
@@ -65,25 +85,22 @@ module.exports = class Router {
      * @throws {InputValidationError} if we located a matching route, but the urls uri params did not match the url schema
      * @return An object with two properties. Resource, which is the relevant Resource object for this route. urlParams which is an object containing all the url params and values in url.
      */
-    async locateResource(url) {        
-        if (!(url instanceof URL)) {
-            throw new TypeError('You must provide a string or URL object to the _locateResource method');
-        }
-
+    async locateResource(url: URL) {        
         let urlParams = null;
 
-        for(let i = 0; i < this._routes.length; i++) {
-            urlParams = this._routes[i].compiledTemplate.fromUri(url.pathname);
+        for(let i = 0; i < this.routes.length; i++) {
+            urlParams = this.routes[i].compiledTemplate.fromUri(url.pathname);
 
+            /* this was from pre-typescript. Can't tell if it's needed, but third party types for uri-templates needs it
             if (urlParams === true) {
                 urlParams = {};
-            }
+            }*/
 
             urlParams = delEmptyString(urlParams);
 
-            if (this._routes[i].config.urlParams) {
+            if (this.routes[i].config.urlParams) {
                 try {
-                    await validateObj(urlParams, this._routes[i].config.urlParams.schema, this._routes[i].config.urlParams.required);
+                    await validateObj(urlParams, this.routes[i].config.urlParams.schema, this.routes[i].config.urlParams.required);
                 } catch (e) {
                     if (e instanceof InputValidationError) {
                         // If the fields aren't valid, this route isn't a match. We might have another match down the chain.
@@ -96,7 +113,7 @@ module.exports = class Router {
 
             if (typeof(urlParams) === "object") {
                 return {
-                    resource: this._routes[i].resource,
+                    resource: this.routes[i].resource,
                     urlParams: urlParams
                 };
             }
@@ -105,12 +122,12 @@ module.exports = class Router {
         return false;
     }
     
-    middleware (protocol, hostname) {
+    middleware (protocol: string, hostname: string) {
         let router = this;
-        return async function (requestMethod, requestUrl, requestBody, requestHeaders) {
-            requestUrl = new URL(protocol + hostname + requestUrl);
+        let middleware: Middleware = async function (requestMethod: string, requestUrl: string, requestBody: string, requestHeaders: {[x: string]: any}) {
+            let fullRequestUrl = new URL(protocol + hostname + requestUrl);
         
-            let routeResponse = await router.locateResource(requestUrl);
+            let routeResponse = await router.locateResource(fullRequestUrl);
 
             if (!routeResponse) {
                 // Currently the roads and roads-api response objects are different, so we have to do this jank.
@@ -120,9 +137,10 @@ module.exports = class Router {
                 return new this.Response(apiResponse.body, apiResponse.status, apiResponse.headers);
             }
         
-            let resource = new routeResponse.resource();
-            let response = await resource.resolve(requestMethod, requestUrl, routeResponse.urlParams, requestBody, requestHeaders);
+            let response = await routeResponse.resource.resolve(requestMethod, fullRequestUrl, routeResponse.urlParams, requestBody, requestHeaders);
             return new this.Response(response.body, response.status, response.headers);
         };
+
+        return middleware;
     }
 };

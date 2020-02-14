@@ -6,10 +6,12 @@ TYPESCRIPT:
 5. Convert source to typescript and update imports
 6. Ensure that there are clear, obvious interfaces available for the most important public interfaces
 7. Clean up all interfaces. Ensure there are return values, voids, parameter types, etc.
-8. Verify tsc works fine
-9. Verify with another project that it works fine via npm link
-10. Clean up files (delete anything you don't want in the package)
-11. Commit, publish
+8. clean up comments on top of file, and on each function and interface
+9. remove use strict
+10. Verify tsc works fine
+11. Verify with another project that it works fine via npm link
+12. Clean up files (delete anything you don't want in the package)
+13. Commit, publish
 
 TODO:
 0. defaultRequestMediaType should be optional, and shouldn't throw an error (resource.resolve)

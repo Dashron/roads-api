@@ -5,7 +5,9 @@ let posts = require('./blogStorage.js');
 module.exports = (mode) => {
     return class PostRepresentation extends JSONRepresentation {
         constructor (requestBody, requestAuth) {
-            super({
+            super();
+
+            this.init({
                 "type": "object",
                 "properties": {
                     "id": {
@@ -67,8 +69,6 @@ module.exports = (mode) => {
                     models[key] = requestBody;
                 }
             });
-
-            this.setRequestBody(requestBody);
         }
 
         append (models, auth) {

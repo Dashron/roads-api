@@ -8,7 +8,7 @@
 
 import { Response } from 'roads';
 
-interface ProblemPayload {
+export interface ProblemPayload {
     // URI identifier, should resolve to human readable documentation
     //type: '',
     // Short, human readable message
@@ -83,8 +83,8 @@ export class HTTPError extends Error {
 
 // 415
 export class UnsupportedMediaTypeError extends HTTPError {
-    constructor (message: string) {
-        super(message);
+    constructor (contentType: string) {
+        super('Unsupported content type' + contentType);
         this.status = 415;
     }
 };
@@ -94,10 +94,10 @@ export class UnsupportedMediaTypeError extends HTTPError {
 // 'WWW-Authenticate': authorization.format(authType));
 export class UnauthorizedError extends HTTPError {
     type: string;
-    realm: string;
-    charset: string;
+    realm?: string;
+    charset?: string;
 
-    constructor (message: string, type: string, realm: string, charset: string) {
+    constructor (message: string, type: string, realm?: string, charset?: string) {
         super(message);
         this.type = type;
         this.realm = realm;
