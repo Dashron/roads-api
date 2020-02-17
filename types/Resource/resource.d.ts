@@ -8,7 +8,7 @@
 /// <reference types="node" />
 import { Response } from 'roads';
 import { URLSearchParams, URL } from 'url';
-import { ReadableRepresentationConstructor, WritableRepresentationConstructor } from '../Representation/representation';
+import { WritableRepresentation, ReadableRepresentationConstructor, WritableRepresentationConstructor } from '../Representation/representation';
 declare type RequestMediaTypeList = {
     [type: string]: WritableRepresentationConstructor;
 };
@@ -18,7 +18,7 @@ declare type ResponseMediaTypeList = {
 declare type AuthSchemeList = {
     [scheme: string]: Function;
 };
-declare type ActionConfig = {
+export declare type ActionConfig = {
     method?: string;
     status?: number;
     requestMediaTypes?: RequestMediaTypeList;
@@ -29,10 +29,13 @@ declare type ActionConfig = {
     authRequired?: boolean;
     authSchemes?: AuthSchemeList;
 };
-declare type ActionList = {
+export declare type ActionList = {
     [action: string]: Action;
 };
-declare type Action = (models: object, requestBody?: object, requestAuth?: any) => Promise<void>;
+export declare type Action = (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any) => Promise<void> | void;
+export declare type ParsedURLParams = {
+    [x: string]: string | number;
+};
 export default abstract class Resource {
     protected actionConfigs: {
         [action: string]: ActionConfig;
@@ -42,9 +45,7 @@ export default abstract class Resource {
         [x: string]: any;
     };
     protected requiredSearchProperties?: Array<string>;
-    protected abstract modelsResolver: (urlParams: {
-        [key: string]: string;
-    }, searchParams: URLSearchParams, action: keyof ActionList, pathname: string) => object;
+    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string): object;
     protected actions: ActionList;
     /**
      * Creates an instance of Resource.
@@ -70,7 +71,7 @@ export default abstract class Resource {
      */
     setSearchSchema(schema: {
         [x: string]: any;
-    }, requiredProperties: Array<string>): void;
+    }, requiredProperties?: Array<string>): void;
     /**
      * Performs your API action for a specific HTTP request on this resource
      *
@@ -80,9 +81,7 @@ export default abstract class Resource {
      * @param {string} requestBody This should be a string representation of the request body.
      * @param {object} requestHeaders This should be an object containing all request headers.
      */
-    resolve(method: string, urlObject: URL, urlParams: {
-        [key: string]: string;
-    }, requestBody?: string, requestHeaders?: {
+    resolve(method: string, urlObject: URL, urlParams?: ParsedURLParams, requestBody?: string, requestHeaders?: {
         [x: string]: string;
     }): Promise<Response>;
     /**
@@ -141,7 +140,7 @@ export default abstract class Resource {
      * Ensures that the search parameters in the request uri match this resources searchSchema
      * @param {*} searchParams
      */
-    protected validateSearchParams(searchParams: URLSearchParams | object): Promise<any>;
+    protected validateSearchParams(searchParams: URLSearchParams): Promise<any>;
     /**
      * Turns an error into a proper Response object.
      * HTTPErrors use their toResponse method.

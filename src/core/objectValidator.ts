@@ -7,7 +7,7 @@
  * 
  */
 
-import Ajv from 'ajv';
+import * as AJV from 'ajv';
 
 import { InputValidationError } from './httpErrors';
 
@@ -38,7 +38,7 @@ function buildSchema(propertiesSchema: object, requiredProperties: Array<string>
  * @param {*} searchParams 
  */
 export default async function validateObject(obj: any, propertiesSchema: object, requiredProperties: Array<string>) {
-    var ajv = new Ajv({ // todo: this ajv config should be somewhere else
+    var ajv = new AJV({ // todo: this ajv config should be somewhere else
         allErrors: true,
         verbose: true,
         async: "es7",

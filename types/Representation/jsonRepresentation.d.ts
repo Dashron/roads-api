@@ -5,18 +5,18 @@
  *
  * Exposes the JSONRepresentation class that adds some useful functionality for JSON resource representations
  */
-import Ajv from 'ajv';
+import * as AJV from 'ajv';
 import { ReadableRepresentation, WritableRepresentation } from './representation';
 interface JsonRepresentationDefaults {
     set: (models: any, requestBody: any, auth: any, key?: string) => void;
     resolve: (models: any, auth: any, key?: string) => any;
 }
 declare type RenderFunction = (item: object, auth: any, stringify: boolean) => string | object;
-declare type JSONSchema = {
+export declare type JSONSchema = {
     [x: string]: any;
     properties?: JSONSchemaProperties;
 };
-declare type JSONSchemaProperties = {
+export declare type JSONSchemaProperties = {
     [x: string]: JSONSchema;
 };
 /**
@@ -27,15 +27,15 @@ declare type JSONSchemaProperties = {
 */
 export default abstract class JSONRepresentation implements ReadableRepresentation, WritableRepresentation {
     protected schema: JSONSchema;
-    protected schemaValidatorOptions: Ajv.Options;
-    protected defaults: JsonRepresentationDefaults;
+    protected schemaValidatorOptions: AJV.Options;
+    protected defaults?: JsonRepresentationDefaults;
     /**
      *
      * @param {object} schema - A JSONRepresentation schema.
      * @param {object} schemaValidatorOptions - An object that is provided to the schema validation system to allow for easy expansion. See AJV's options for more details (https://github.com/epoberezkin/ajv#options).
      * @param {object} defaults - An object that allows the implementor to provide some default functionality. Currently this supports a "set" and "resolve" fallback for schemas.
      */
-    init(schema: JSONSchema, schemaValidatorOptions: Ajv.Options, defaults: JsonRepresentationDefaults): void;
+    init(schema: JSONSchema, schemaValidatorOptions?: AJV.Options, defaults?: JsonRepresentationDefaults): void;
     /**
      *
      * @returns {object} The schema passed to the constructor

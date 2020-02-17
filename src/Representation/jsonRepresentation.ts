@@ -6,7 +6,8 @@
  * Exposes the JSONRepresentation class that adds some useful functionality for JSON resource representations
  */
 
-import Ajv, { RequiredParams } from 'ajv';
+import * as AJV from 'ajv';
+import { RequiredParams } from 'ajv';
 import { ValidationError, FieldError } from './validationError';
 import { InvalidRequestError, HTTPError } from '../core/httpErrors';
 import { ReadableRepresentation, WritableRepresentation } from './representation';
@@ -19,12 +20,12 @@ interface JsonRepresentationDefaults {
 type RenderFunction = (item: object, auth: any, stringify: boolean) => string | object
 
 // This is a placeholder. Ideally this will fully map the json schema format
-type JSONSchema = {
+export type JSONSchema = {
     [x: string]: any,
     properties?: JSONSchemaProperties 
 }
 
-type JSONSchemaProperties = {
+export type JSONSchemaProperties = {
     [x: string]: JSONSchema
 }
 
@@ -36,9 +37,8 @@ type JSONSchemaProperties = {
 */
 export default abstract class JSONRepresentation implements ReadableRepresentation, WritableRepresentation {
     protected schema: JSONSchema;
-
-    protected schemaValidatorOptions: Ajv.Options;
-    protected defaults: JsonRepresentationDefaults;
+    protected schemaValidatorOptions: AJV.Options;
+    protected defaults?: JsonRepresentationDefaults;
 
     /**
      * 
@@ -46,7 +46,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
      * @param {object} schemaValidatorOptions - An object that is provided to the schema validation system to allow for easy expansion. See AJV's options for more details (https://github.com/epoberezkin/ajv#options).
      * @param {object} defaults - An object that allows the implementor to provide some default functionality. Currently this supports a "set" and "resolve" fallback for schemas. 
      */
-    init (schema: JSONSchema, schemaValidatorOptions: Ajv.Options, defaults: JsonRepresentationDefaults) {
+    init (schema: JSONSchema, schemaValidatorOptions?: AJV.Options, defaults?: JsonRepresentationDefaults) {
         this.schema = schema;
         this.schemaValidatorOptions = schemaValidatorOptions || {};
 
@@ -109,7 +109,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
                 if (schema.resolve) {
                     return schema.resolve(models, auth);
                 // if there is no schema level resolve, but there's a default resolve, use that
-                } else if (this.defaults.resolve) {
+                } else if (this.defaults && this.defaults.resolve) {
                     return this.defaults.resolve(models, auth, key);
                 // if no resolve function could be found, error
                 } else {
@@ -189,7 +189,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
             throw new InvalidRequestError('Invalid request body: Could not parse JSON request');
         }
 
-        var ajv = new Ajv(this.schemaValidatorOptions);
+        var ajv = new AJV(this.schemaValidatorOptions);
 
         // We want read only fields to be rejected on input, so we add custom validation
         ajv.addKeyword('roadsReadOnly', {
@@ -279,7 +279,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
                 if (schema.set) {
                     return schema.set(models, requestBody, auth);
                 // if there is no schema level set, but there's a default set, use that
-                } else if (this.defaults.set) {
+                } else if (this.defaults && this.defaults.set) {
                     return this.defaults.set(models, requestBody, auth, key);
                 // if no set function could be found, error
                 } else {

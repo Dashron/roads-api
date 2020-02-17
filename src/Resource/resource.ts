@@ -14,9 +14,9 @@
 // 5. patch media types (configurable)
 
 import authParser from './authParser';
-import ContentType, { MediaType } from 'content-type';
+import { parse as parseContentType } from 'content-type';
 import * as Accept from '@hapi/accept';
-import validateObj from '../core/objectValidator.js';
+import validateObj from '../core/objectValidator';
 import { Response } from 'roads';
 
 import { 
@@ -44,7 +44,7 @@ import {
     MethodNotAllowedError
 } from '../core/httpErrors';
 
-import Representation, { WritableRepresentation, ReadableRepresentation, ReadableRepresentationConstructor, WritableRepresentationConstructor } from '../Representation/representation';
+import { WritableRepresentation, ReadableRepresentationConstructor, WritableRepresentationConstructor } from '../Representation/representation';
 
 const globalDefaults: { [action: string]: ActionConfig } = {
     get: {
@@ -89,7 +89,7 @@ type RequestMediaTypeList = { [type: string]: WritableRepresentationConstructor 
 type ResponseMediaTypeList = { [type: string]: ReadableRepresentationConstructor }
 type AuthSchemeList = { [scheme: string]: Function };
 
-type ActionConfig = {
+export type ActionConfig = {
     method?: string,
     status?: number,
     requestMediaTypes?: RequestMediaTypeList,
@@ -101,18 +101,20 @@ type ActionConfig = {
     authSchemes?: AuthSchemeList
 }
 
-type ActionList = { 
+export type ActionList = { 
     [action: string]: Action;
 }
 
-type Action = (models: object, requestBody?: object, requestAuth?: any) => Promise<void>;
+export type Action = (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any) => Promise<void> | void;
+
+export type ParsedURLParams = {[x: string]: string | number};
 
 export default abstract class Resource {
     protected actionConfigs: {[action: string]: ActionConfig}
     protected configDefaults: ActionConfig;
     protected searchSchema: {[x: string]: any} = {};
     protected requiredSearchProperties?: Array<string>;
-    protected abstract modelsResolver: (urlParams: { [key: string]: string }, searchParams: URLSearchParams, action: keyof ActionList, pathname: string) => object;
+    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string): object;
     protected actions: ActionList = {};
 
     /**
@@ -127,6 +129,8 @@ export default abstract class Resource {
         if (!Array.isArray(supportedActions)) {
             supportedActions = [supportedActions];
         }
+
+        this.actionConfigs = {};
 
         supportedActions.forEach((action) => {
             // Technically I could assign configDefaults here, but it would
@@ -156,7 +160,7 @@ export default abstract class Resource {
      * @param {array} requiredProperties 
      * @todo: json schema type
      */
-    setSearchSchema (schema: {[x: string]: any}, requiredProperties: Array<string>) {
+    setSearchSchema (schema: {[x: string]: any}, requiredProperties?: Array<string>) {
         this.searchSchema = schema;
         this.requiredSearchProperties = requiredProperties;
     }
@@ -170,7 +174,7 @@ export default abstract class Resource {
      * @param {string} requestBody This should be a string representation of the request body.
      * @param {object} requestHeaders This should be an object containing all request headers.
      */
-    async resolve (method: string, urlObject: URL, urlParams: { [key: string]: string }, requestBody?: string, requestHeaders: {[x: string]: string} = {}) {
+    async resolve (method: string, urlObject: URL, urlParams?: ParsedURLParams, requestBody?: string, requestHeaders: {[x: string]: string} = {}) {
         try {
             let action = this.getActionForMethod(method);
 
@@ -192,16 +196,17 @@ export default abstract class Resource {
                 this.getActionConfig(action, 'authSchemes') as AuthSchemeList);
             
             let parsedRequestBody: any;
+            let RequestMediaHandler: WritableRepresentationConstructor | undefined = undefined;
 
             if (requestBody && this.getActionConfig(action, 'allowRequestBody')) {
                 /*
                 * Identify the proper request representation from the accept header
                 */
-                let RequestMediaHandler = this.getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
+                RequestMediaHandler = this.getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
                     this.getActionConfig(action, 'defaultRequestMediaType') as string, 
                     this.getActionConfig(action, 'requestMediaTypes') as RequestMediaTypeList);
 
-                parsedRequestBody = await (new RequestMediaHandler()).parseInput(requestBody);
+                parsedRequestBody = await (new RequestMediaHandler(action)).parseInput(requestBody);
             } else {
                 /*
                 * Here's a safe short cut if we want the request to still work even though we
@@ -229,14 +234,14 @@ export default abstract class Resource {
                 this.getActionConfig(action, 'defaultResponseMediaType') as string, Object.keys(this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList));
 
             let ResponseMediaHandler = this.getResponseMediaHandler(acceptedContentType, this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList);
-            let responseMediaHandler = new ResponseMediaHandler();
+            let responseMediaHandler = new ResponseMediaHandler(action);
 
             /**
              * Perform the HTTP action and get the response
              */
-            await this.actions[action](models, parsedRequestBody, requestAuth);
+            await this.actions[action](models, parsedRequestBody, RequestMediaHandler ? new RequestMediaHandler(action): undefined, requestAuth);
             // todo: find a less janky way to handle this method===delete response handler
-            return new Response(this.getActionConfig(action, 'status') as string, method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth, true), {
+            return new Response(method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth, true), this.getActionConfig(action, 'status') as number, {
                 "content-type": acceptedContentType
             });
         } catch (e) {
@@ -372,7 +377,7 @@ export default abstract class Resource {
      * @param {*} representations 
      */
     protected getRequestMediaHandler(contentTypeHeader: string | undefined, defaultContentType: string, representations: RequestMediaTypeList ) {        
-        let parsedContentType = ContentType.parse(contentTypeHeader || defaultContentType);
+        let parsedContentType = parseContentType(contentTypeHeader || defaultContentType);
 
         if (parsedContentType.type && representations[parsedContentType.type]) {
             return representations[parsedContentType.type];
@@ -385,35 +390,24 @@ export default abstract class Resource {
      * Ensures that the search parameters in the request uri match this resources searchSchema
      * @param {*} searchParams 
      */
-    protected async validateSearchParams(searchParams: URLSearchParams | object): Promise<any> {
-        /*
-         * Turn search params into a non-search param object because our schema validation
-         * system fails on URLSearchParams
-         */
-        if (searchParams instanceof URLSearchParams) {
-            let params: {[x: string]: any} = {};
-        
-            for (let key of (searchParams as URLSearchParams).keys()) {
-                if (params[key]) {
-                    // keys returns dupes if the key is there twice, but getAll will return the data we need below so we don't want keys duplicated
-                    continue;
-                }
-        
-                params[key] = (searchParams as URLSearchParams).getAll(key);
-                if (params[key].length === 1) {
-                    params[key] = params[key][0];
-                }
-            }
-        
-            searchParams = params;
-        }
+    protected async validateSearchParams(searchParams: URLSearchParams): Promise<any> {
 
-        if (typeof(searchParams) !== "object") {
-            throw new Error('You must provide an object to the _validateSearchParams');
+        let params: {[x: string]: any} = {};
+    
+        for (let key of searchParams.keys()) {
+            if (params[key]) {
+                // keys returns dupes if the key is there twice, but getAll will return the data we need below so we don't want keys duplicated
+                continue;
+            }
+    
+            params[key] = searchParams.getAll(key);
+            if (params[key].length === 1) {
+                params[key] = params[key][0];
+            }
         }
 
         try {
-            return await validateObj(searchParams, this.searchSchema, this.requiredSearchProperties ? this.requiredSearchProperties : []);
+            return await validateObj(params, this.searchSchema, this.requiredSearchProperties ? this.requiredSearchProperties : []);
         } catch (e) {
             if (e !instanceof InputValidationError) {
                 throw new InputValidationError('Invalid Search Query', [e.getMessage()]);

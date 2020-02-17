@@ -1,13 +1,13 @@
-"use strict";
-
-let PostResource = require('../data/postResource.js');
-let PostCollectionResource = require('../data/postCollectionResource.js');
+import PostResource from '../data/postResource';
+import PostCollectionResource from '../data/postCollectionResource';
+import { Response } from 'roads';
+import Resource, { ParsedURLParams } from '../../Resource/resource';
 
 const BASE_URL = 'http://dashron.com';
 let { URL } = require('url');
 
 // body must be a string
-function fixBody(body) {
+function fixBody(body: any) {
     if (typeof(body) === "object") {
         return JSON.stringify(body);
     }
@@ -19,26 +19,22 @@ function fixBody(body) {
     return body.toString();
 }
 
-function ensureInvalidRequest(resource, method, url, urlParams, body, headers, message, additionalProblems) {
+function ensureInvalidRequest(resource: Resource, method: string, url: URL, urlParams: ParsedURLParams | undefined, body: any, headers: {[x: string]: string} | undefined, message: string, additionalProblems: Array<object>) {
     body = fixBody(body);
     if (!additionalProblems) {
         additionalProblems = [];
     }
 
     return resource.resolve(method, url, urlParams, body, headers)
-    .then((response) => {
-        expect(response).toEqual({
-            status: 400,
-            body: JSON.stringify({ title: message, status: 400, "additional-problems": additionalProblems }),
-            headers: {"content-type": "application/json"} 
-        });
+    .then((response: Response) => {
+        expect(response).toEqual(new Response(JSON.stringify({ title: message, status: 400, "additional-problems": additionalProblems }), 400, {"content-type": "application/json"}));
     });
 }
 
-function ensureValidRequest(resource, method, url, urlParams, body, headers, expectedResponse) {
+function ensureValidRequest(resource: Resource, method: string, url: URL, urlParams: ParsedURLParams | undefined, body: any, headers: {[x: string]: string} | undefined, expectedResponse: Response) {
     body = fixBody(body);
     return resource.resolve(method, url, urlParams, body, headers)
-    .then((response) => {
+    .then((response: Response) => {
         expect(response).toEqual(expectedResponse);
     });
 }
@@ -48,7 +44,7 @@ describe('blog resource tests', () => {
         expect.assertions(1);
 
         return ensureValidRequest(
-            new PostResource(),
+            new PostResource('get'),
             'GET', 
             new URL('/posts/12345', BASE_URL), 
             {
@@ -57,11 +53,8 @@ describe('blog resource tests', () => {
             undefined, 
             {
                 authorization: 'Bearer abcde'
-            }, {
-                status: 200,
-                body: JSON.stringify({ id: 12345, title: 'hello', post: "the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}}),
-                headers: {"content-type": "application/json"}
-            }
+            }, 
+            new Response(JSON.stringify({ id: 12345, title: 'hello', post: "the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}}), 200, {"content-type": "application/json"})
         );
     });
 
@@ -69,26 +62,23 @@ describe('blog resource tests', () => {
         expect.assertions(1);
 
         return ensureValidRequest(
-            new PostCollectionResource(),
+            new PostCollectionResource('get'),
             'GET', 
             new URL('/posts', BASE_URL), 
             undefined,
             undefined, 
             {
                 authorization: 'Bearer abcde'
-            }, {
-                status: 200,
-                body: JSON.stringify({
-                    data: [{"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12345,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}}],
-                    perPage: 10,
-                    page: 1
-                }),
-                headers: {"content-type": "application/json"}
-            }
+            }, 
+            new Response(JSON.stringify({
+                data: [{"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":12345,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}}],
+                perPage: 10,
+                page: 1
+            }), 200, {"content-type": "application/json"})
         );
 
     });
@@ -98,7 +88,7 @@ describe('blog resource tests', () => {
 
         // Edit resource
         return ensureValidRequest(
-            new PostCollectionResource(),
+            new PostCollectionResource('append'),
             'POST',  
             new URL('/posts', BASE_URL), 
             undefined, 
@@ -110,18 +100,15 @@ describe('blog resource tests', () => {
             }, {
                 "Content-Type": "application/json",
                 authorization: 'Bearer abcde'
-            }, {
-                status: 201,
-                body: JSON.stringify({"data":[
-                    {"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12345,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12346,"title":"new title","post":"my blog post", "active": true, "nestingTest": {"nestedField": "nestedValue"}}
-                ],"perPage":10,"page":1}),
-                headers: {"content-type": "application/json"}
-            }
+            },
+            new Response(JSON.stringify({"data":[
+                {"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":12345,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":12346,"title":"new title","post":"my blog post", "active": true, "nestingTest": {"nestedField": "nestedValue"}}
+            ],"perPage":10,"page":1}), 201, {"content-type": "application/json"})
         );
     });
 
@@ -130,7 +117,7 @@ describe('blog resource tests', () => {
 
         // Edit resource
         return ensureValidRequest(
-            new PostCollectionResource(),
+            new PostCollectionResource('append'),
             'POST',  
             new URL('/posts', BASE_URL), 
             undefined, 
@@ -143,19 +130,16 @@ describe('blog resource tests', () => {
             }, {
                 "Content-Type": "application/json",
                 authorization: 'Bearer abcde'
-            }, {
-                status: 201,
-                body: JSON.stringify({"data":[
-                    {"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12345,"title":"hello","post":"the body","active": true,  "nestingTest": {"nestedField": "nestedValue"}},
-                    {"id":12346,"title":"new title","post":"my blog post", "active": true, "nestingTest": {"nestedField": "nestedValue"}}
-                ]
-                ,"perPage":10,"page":1}),
-                headers: {"content-type": "application/json"}
-            }
+            },
+            new Response(JSON.stringify({"data":[
+                {"id":1,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":2,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":3,"title":"hello","post":"the body", "active": false, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":4,"title":"hello","post":"the body", "active": true, "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":12345,"title":"hello","post":"the body","active": true,  "nestingTest": {"nestedField": "nestedValue"}},
+                {"id":12346,"title":"new title","post":"my blog post", "active": true, "nestingTest": {"nestedField": "nestedValue"}}
+            ]
+            ,"perPage":10,"page":1}), 201, {"content-type": "application/json"})
         );
     });
 
@@ -164,7 +148,7 @@ describe('blog resource tests', () => {
 
         // Edit resource
         return ensureInvalidRequest(
-            new PostCollectionResource(),
+            new PostCollectionResource('append'),
             'POST',  
             new URL('/posts', BASE_URL), 
             undefined, 
@@ -185,7 +169,7 @@ describe('blog resource tests', () => {
 
         // Edit resource
         return ensureInvalidRequest(
-            new PostCollectionResource(),
+            new PostCollectionResource('append'),
             'POST',  
             new URL('/posts', BASE_URL), 
             undefined, 
@@ -209,7 +193,7 @@ describe('blog resource tests', () => {
         expect.assertions(1);
 
         return ensureInvalidRequest(
-            new PostCollectionResource(),
+            new PostCollectionResource('append'),
             'POST', 
             new URL('/posts', BASE_URL),
             undefined,
@@ -231,23 +215,19 @@ describe('blog resource tests', () => {
     test('Test Invalid POST Resource execution: method not allowed', function () {
         expect.assertions(1);
 
-        return (new PostResource()).resolve('POST', new URL('/posts/12345', BASE_URL), {
+        return (new PostResource('append')).resolve('POST', new URL('/posts/12345', BASE_URL), {
             post_id: 12345
-        }, {
+        }, JSON.stringify({
             title: "New Name", 
             id: 5, 
             post:"New post contents", 
             nestingTest: {"nestedField": "nestedValue"}
-        }, {
+        }), {
             "Content-Type": "application/json",
             authorization: 'Bearer abcde'
         })
-        .then((response) => {
-            expect(response).toEqual({
-                status: 405,
-                body: JSON.stringify({ title: "GET, DELETE, PATCH", status: 405, "additional-problems": [] }),
-                headers: {"content-type": "application/json"} 
-            });
+        .then((response: Response) => {
+            expect(response).toEqual(new Response(JSON.stringify({ title: "GET, DELETE, PATCH", status: 405, "additional-problems": [] }), 405, {"content-type": "application/json"}));
         });
     });
 
@@ -256,7 +236,7 @@ describe('blog resource tests', () => {
 
         // Edit resource
         return ensureValidRequest(
-            new PostResource(),
+            new PostResource('edit'),
             'PATCH',  
             new URL('/posts/12345', BASE_URL), 
             {
@@ -267,11 +247,7 @@ describe('blog resource tests', () => {
             }, {
                 "Content-Type": "application/merge-patch+json",
                 authorization: 'Bearer abcde'
-            }, {
-                status: 200,
-                body: JSON.stringify({ id: 12345, title: 'new edited title', post: "the body", "active": true, "nestingTest": {"nestedField": "nestedValue"} }),
-                headers: {"content-type": "application/json"}
-            }
+            }, new Response(JSON.stringify({ id: 12345, title: 'new edited title', post: "the body", "active": true, "nestingTest": {"nestedField": "nestedValue"} }), 200, {"content-type": "application/json"})
         );
     });
 
@@ -279,7 +255,7 @@ describe('blog resource tests', () => {
         expect.assertions(1);
 
         return ensureInvalidRequest(
-            new PostResource(),
+            new PostResource('edit'),
             'PATCH', 
             new URL('/posts/12345', BASE_URL), 
             {
@@ -303,7 +279,7 @@ describe('blog resource tests', () => {
 
         // Delete resource
         return ensureValidRequest(
-            new PostResource(),
+            new PostResource('delete'),
             'DELETE', 
             new URL('/posts/12345', BASE_URL), 
             {
@@ -313,11 +289,7 @@ describe('blog resource tests', () => {
             {
                 "Content-Type": "application/json",
                 authorization: 'Bearer abcde'
-            }, {
-                status: 204,
-                body: '',
-                headers: {"content-type": "application/json"}
-            }
+            }, new Response('', 204, {"content-type": "application/json"})
         );
     });
 });

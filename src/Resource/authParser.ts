@@ -8,15 +8,8 @@
 
 const Authorization = require('auth-header');
 
-const {
-    AUTH_BASIC,
-    AUTH_BEARER,
-    AUTH_MAC
-} = require('../core/constants.js');
-
-const {
-    UnauthorizedError
-} = require('../core/httpErrors.js');
+import { AUTH_BASIC, AUTH_BEARER, AUTH_MAC } from '../core/constants';
+import { UnauthorizedError } from '../core/httpErrors';
 
 interface SchemeParser { (token: string): any };
 

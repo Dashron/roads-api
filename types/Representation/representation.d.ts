@@ -11,12 +11,12 @@ export interface ReadableRepresentation extends Representation {
     render(models: any, auth: any, stringify: boolean): any;
 }
 export interface ReadableRepresentationConstructor {
-    new (): ReadableRepresentation;
+    new (action: string): ReadableRepresentation;
 }
 export interface WritableRepresentation extends Representation {
     parseInput(requestBody: string): Promise<any>;
     applyEdit(requestBody: any, models: object, auth: any): void;
 }
 export interface WritableRepresentationConstructor {
-    new (): WritableRepresentation;
+    new (action: string): WritableRepresentation;
 }

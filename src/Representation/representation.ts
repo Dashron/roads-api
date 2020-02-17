@@ -14,14 +14,14 @@ export interface ReadableRepresentation extends Representation {
 }
 
 export interface ReadableRepresentationConstructor {
-    new(): ReadableRepresentation;
+    new(action: string): ReadableRepresentation;
 }
 
 export interface WritableRepresentation extends Representation {
     parseInput(requestBody: string): Promise<any>;
-    applyEdit (requestBody: any, models: object, auth: any): void;
+    applyEdit(requestBody: any, models: object, auth: any): void;
 }
 
 export interface WritableRepresentationConstructor {
-    new(): WritableRepresentation;
+    new(action: string): WritableRepresentation;
 }
