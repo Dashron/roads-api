@@ -73,22 +73,19 @@ export default class PostCollectionResource extends Resource {
     modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string) {
         let models: {[x: string]: any} = {};
 
-        if (searchParams) {
-            if (typeof (searchParams.get('per_page')) === "undefined") {
-                models.perPage = 10;
-            } else {
-                models.perPage = searchParams.get('per_page');
-            }
+        if (searchParams === undefined || searchParams.get('per_page') === null) {
+            models.perPage = 10;
+        } else {
+            models.perPage = searchParams.get('per_page');
+        }
 
-            if (typeof (searchParams.get('page')) === "undefined") {
-                models.page = 1;
-            } else {
-                models.page = searchParams.get('page');
-            }
+        if (searchParams === undefined || searchParams.get('page') === null) {
+            models.page = 1;
+        } else {
+            models.page = searchParams.get('page');
         }
 
         models.posts = posts.getAll(models.page, models.perPage);
-
         return models;
     }
 };
