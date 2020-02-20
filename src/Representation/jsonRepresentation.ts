@@ -141,7 +141,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
      * @param {any} auth 
      * @returns {array<object>} An array representation of the provided models
      */
-    protected renderSchemaArray (schemaItems: { render: RenderFunction }, modelItems: Array<object>, auth: any): Array<object> {
+    protected renderSchemaArray (schemaItems: ReadableRepresentation, modelItems: Array<object>, auth: any): Array<object> {
         let items: Array<object> = [];
 
         modelItems.forEach((item: object) => {
@@ -211,7 +211,6 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
             try {
                 return await compiledSchema(parsedBody);
             } catch(errors) {
-                //console.log('validation errors', errors);
                 throw new ValidationError('Invalid request body', errors);
             }
         } else {

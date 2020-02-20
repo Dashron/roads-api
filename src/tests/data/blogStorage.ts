@@ -1,13 +1,22 @@
 export class Post {
-    id?: number;
-    title?: string;
-    post?: string;
-    active?: number;
+    id: number;
+    title: string;
+    post: string;
+    active: number;
 
     constructor(id?: number, title?: string, post?: string, active: number = 1) {
-        this.id = id;
-        this.title = title;
-        this.post = post;
+        if (id) {
+            this.id = id;
+        }
+
+        if (title) {
+            this.title = title;
+        }
+
+        if (post) {
+            this.post = post;
+        }
+        
         this.active = active;
     }
 
