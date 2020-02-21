@@ -410,7 +410,7 @@ export default abstract class Resource {
             return await validateObj(params, this.searchSchema, this.requiredSearchProperties ? this.requiredSearchProperties : []);
         } catch (e) {
             if (e !instanceof InputValidationError) {
-                throw new InputValidationError('Invalid Search Query', [e.getMessage()]);
+                throw new InputValidationError('Invalid Search Query', [e.message]);
             }
 
             throw e;

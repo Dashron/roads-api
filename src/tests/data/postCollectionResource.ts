@@ -73,13 +73,13 @@ export default class PostCollectionResource extends Resource {
         if (searchParams === undefined || searchParams.get('per_page') === null) {
             models.perPage = 10;
         } else {
-            models.perPage = searchParams.get('per_page');
+            models.perPage = Number(searchParams.get('per_page'));
         }
 
         if (searchParams === undefined || searchParams.get('page') === null) {
             models.page = 1;
         } else {
-            models.page = searchParams.get('page');
+            models.page = Number(searchParams.get('page'));
         }
 
         models.posts = posts.getAll(models.page, models.perPage);
