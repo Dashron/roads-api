@@ -1,6 +1,6 @@
 /**
- * jsonRepresentation.js
- * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * jsonRepresentation.ts
+ * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
  *
  * Exposes the JSONRepresentation class that adds some useful functionality for JSON resource representations
@@ -11,7 +11,6 @@ interface JsonRepresentationDefaults {
     set: (models: any, requestBody: any, auth: any, key?: string) => void;
     resolve: (models: any, auth: any, key?: string) => any;
 }
-declare type RenderFunction = (item: object, auth: any, stringify: boolean) => string | object;
 export declare type JSONSchema = {
     [x: string]: any;
     properties?: JSONSchemaProperties;
@@ -72,9 +71,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
      * @param {any} auth
      * @returns {array<object>} An array representation of the provided models
      */
-    protected renderSchemaArray(schemaItems: {
-        render: RenderFunction;
-    }, modelItems: Array<object>, auth: any): Array<object>;
+    protected renderSchemaArray(schemaItems: ReadableRepresentation, modelItems: Array<object>, auth: any): Array<object>;
     /**
      * Turns an object into a JSON representation
      *

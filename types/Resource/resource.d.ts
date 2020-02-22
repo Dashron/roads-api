@@ -1,8 +1,7 @@
 /**
- * resource.js
- * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * resource.ts
+ * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
- *
  *
  */
 /// <reference types="node" />
@@ -36,6 +35,9 @@ export declare type Action = (models: object, requestBody: any, requestMediaHand
 export declare type ParsedURLParams = {
     [x: string]: string | number;
 };
+export interface ResourceConstructor {
+    new (configDefaults: ActionConfig, supportedActions: keyof ActionList | Array<keyof ActionList>): Resource;
+}
 export default abstract class Resource {
     protected actionConfigs: {
         [action: string]: ActionConfig;

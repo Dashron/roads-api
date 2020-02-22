@@ -1,8 +1,7 @@
 /**
- * contentTypeResolver.js
- * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * contentTypeRespolver.ts
+ * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
- *
  *
  */
 import contentType, { ParsedMediaType } from 'content-type';

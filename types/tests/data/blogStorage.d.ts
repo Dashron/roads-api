@@ -1,8 +1,8 @@
 export declare class Post {
-    id?: number;
-    title?: string;
-    post?: string;
-    active?: number;
+    id: number;
+    title: string;
+    post: string;
+    active: number;
     constructor(id?: number, title?: string, post?: string, active?: number);
     save(): void;
     delete(): void;
