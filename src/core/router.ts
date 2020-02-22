@@ -1,14 +1,13 @@
-"use strict";
 /**
- * router.js
- * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * router.ts
+ * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
- * 
  * 
  */
 
 import { URL } from 'url';
-import URITemplate, { URITemplate as URITemplateType } from 'uri-templates';
+import uriTemplate = require('uri-templates');
+import { URITemplate as URITemplateType } from 'uri-templates';
 import validateObj from './objectValidator';
 import { InputValidationError, NotFoundError } from './httpErrors';
 import Resource from '../Resource/resource';
@@ -42,23 +41,21 @@ function delEmptyString(obj: {[x: string]: any}) {
 interface RouteConfig {
     urlParams: {
         schema: {[x: string]: any},
-        required: Array<string>
+        required?: Array<string>
     }
 }
 
 interface Route {
     compiledTemplate: URITemplateType,
-    config: RouteConfig,
+    config?: RouteConfig,
     resource: Resource
 }
 
-module.exports = class Router {
+export default class Router {
     protected routes: Array<Route>;
-    protected baseUrl: string;
 
-    constructor (baseUrl: string) {
+    constructor () {
         this.routes = [];
-        this.baseUrl = baseUrl;
     }
 
     /**
@@ -68,9 +65,9 @@ module.exports = class Router {
      * @param {Resource} resource Resource object
      * @param {object} config Additional configuration for this route. Currently supports a urlParams object with "schema" and "required" properties. These properties are used alongside the standard objectValidator to validate any URI params.
      */
-    addResource(template: string, resource: Resource, config: RouteConfig) {
+    addResource(template: string, resource: Resource, config?: RouteConfig) {
         let route: Route = {
-            compiledTemplate: URITemplate(template),
+            compiledTemplate: uriTemplate(template),
             config: config,
             resource: resource
         };
@@ -97,10 +94,11 @@ module.exports = class Router {
             }*/
 
             urlParams = delEmptyString(urlParams);
+            let config = this.routes[i].config;
 
-            if (this.routes[i].config.urlParams) {
+            if (config && config.urlParams) {
                 try {
-                    await validateObj(urlParams, this.routes[i].config.urlParams.schema, this.routes[i].config.urlParams.required);
+                    await validateObj(urlParams, config.urlParams.schema, config.urlParams.required ? config.urlParams.required  : []);
                 } catch (e) {
                     if (e instanceof InputValidationError) {
                         // If the fields aren't valid, this route isn't a match. We might have another match down the chain.

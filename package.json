@@ -5,7 +5,9 @@
   "main": "index.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "test": "node node_modules/jest/bin/jest.js src/tests/"
+    "test": "node node_modules/jest/bin/jest.js src/tests/",
+    "prepare": "tsc",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",

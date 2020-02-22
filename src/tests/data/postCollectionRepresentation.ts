@@ -1,9 +1,6 @@
-"use strict";
-
 import JSONRepresentation from "../../Representation/jsonRepresentation";
 import postRepresentation from './postRepresentation';
 
-//module.exports = function (itemRepresentation, resolveArrayItems) {
 export default class CollectionRepresentation extends JSONRepresentation {
     constructor (action: string) {
         super();

@@ -1,7 +1,7 @@
 "use strict";
 
 import { JSONRepresentation } from '../../index';
-import { createPosts, Post } from './blogStorage';
+import { Post } from './blogStorage';
 
 export default class PostRepresentation extends JSONRepresentation {
     constructor (action: string) {

@@ -1,5 +1,3 @@
-"use strict";
-
 import { Post } from "./blogStorage";
 import { WritableRepresentation } from "../../Representation/representation";
 

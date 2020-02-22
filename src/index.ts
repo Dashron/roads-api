@@ -1,6 +1,6 @@
 /**
- * index.js
- * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * index.ts
+ * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
  * 
  */

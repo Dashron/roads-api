@@ -1,8 +1,7 @@
 /**
- * resource.js
- * Copyright(c) 2018 Aaron Hedges <aaron@dashron.com>
+ * resource.ts
+ * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
- * 
  * 
  */
 
@@ -108,6 +107,10 @@ export type ActionList = {
 export type Action = (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any) => Promise<void> | void;
 
 export type ParsedURLParams = {[x: string]: string | number};
+
+export interface ResourceConstructor {
+    new(configDefaults: ActionConfig, supportedActions: keyof ActionList | Array<keyof ActionList>): Resource;
+}
 
 export default abstract class Resource {
     protected actionConfigs: {[action: string]: ActionConfig}
