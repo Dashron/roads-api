@@ -1,10 +1,11 @@
 import { Resource } from '../../index';
 import tokenResolver from './tokenResolver';
-import postRepresentation from './postRepresentation';
+import PostRepresentation from './postRepresentation';
 import { Post, createPosts } from './blogStorage';
 import { WritableRepresentation } from '../../Representation/representation';
 import { NotFoundError } from '../../core/httpErrors';
 import { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } from '../../core/constants';
+export type PostActions = "get" | "delete" | "partialEdit";
 
 let posts = createPosts();
 
@@ -12,29 +13,39 @@ export default class PostResource extends Resource {
     protected label: string;
 
     constructor(label: string) {
-        //TODO: Make is post change this whole resource to append only
-        super({
+        super();
+
+        this.addAction("get", () => {}, {
             authSchemes: { [ AUTH_BEARER ]: tokenResolver },
-            responseMediaTypes: { [ MEDIA_JSON ]: postRepresentation },
+            responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation("get") },
             defaultResponseMediaType: MEDIA_JSON,
             defaultRequestMediaType: MEDIA_JSON,
             authRequired: true,
-        }, ["get", "delete"]);
+        });
         
+        this.addAction("delete", (models: Post) => {
+            models.delete();
+        }, {
+            authSchemes: { [ AUTH_BEARER ]: tokenResolver },
+            responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation("delete") },
+            defaultResponseMediaType: MEDIA_JSON,
+            defaultRequestMediaType: MEDIA_JSON,
+            authRequired: true,
+        });
+
         this.addAction("partialEdit", (models: Post, requestBody: any, RequestMediaHandler: WritableRepresentation, auth: any) => {
             RequestMediaHandler.applyEdit(requestBody, models, auth);
             models.save();
         }, {
-            requestMediaTypes: { [MEDIA_JSON_MERGE]: postRepresentation },
+            authSchemes: { [ AUTH_BEARER ]: tokenResolver },
+            requestMediaTypes: { [MEDIA_JSON_MERGE]: new PostRepresentation("partialEdit") },
+            responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation("partialEdit") },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
-            defaultResponseMediaType: MEDIA_JSON
+            defaultResponseMediaType: MEDIA_JSON,
+            authRequired: true
         });
 
-        this.addAction("delete", (models: Post) => {
-            models.delete();
-        });
 
-        this.addAction("get", () => {});
 
         // This is a quick hack to easily differentiate between two differenet post resources
         if (label) {

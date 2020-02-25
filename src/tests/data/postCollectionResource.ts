@@ -1,30 +1,26 @@
 import { Post } from "./blogStorage";
 import { WritableRepresentation } from "../../Representation/representation";
-
 import { Resource } from '../../index';
 import { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } from '../../core/constants';
-
-import posts, { createPosts } from './blogStorage';
 import { ParsedURLParams, ActionList } from "../../Resource/resource";
-
 import tokenResolver from './tokenResolver';
 
 import PostCollectionRepresentation from './postCollectionRepresentation';
 import PostRepresentation from "./postRepresentation";
+import posts, { createPosts } from './blogStorage';
+
+export type PostCollectionActions = "get" | "append";
 
 export default class PostCollectionResource extends Resource {
-    constructor(action: string) {
-        //TODO: Make is post change this whole resource to append only
-        super({
+    constructor(label: string) {
+        super();
+
+        this.addAction("get", () => {}, {
             authSchemes: { [AUTH_BEARER]: tokenResolver },
-            responseMediaTypes: { 
-                [MEDIA_JSON]: PostCollectionRepresentation
-            },
+            responseMediaTypes: { [MEDIA_JSON]: new PostCollectionRepresentation("get") },
             authRequired: true,
             defaultResponseMediaType: MEDIA_JSON
-        }, ["get"]);
-
-        this.addAction("get", () => {});
+        });
 
         this.addAction("append", (models: {posts: Array<Post>}, requestBody: any, requestMediaHandler: WritableRepresentation, auth: any) => {
             let directPosts = createPosts();
@@ -42,14 +38,17 @@ export default class PostCollectionResource extends Resource {
             post.save();
             models.posts = directPosts;
         }, {
-            requestMediaTypes: { [MEDIA_JSON]: PostRepresentation },
+            authSchemes: { [AUTH_BEARER]: tokenResolver },
+            requestMediaTypes: { [MEDIA_JSON]: new PostRepresentation("append") },
+            responseMediaTypes: { [MEDIA_JSON]: new PostCollectionRepresentation("append") },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
-            defaultResponseMediaType: MEDIA_JSON
+            defaultResponseMediaType: MEDIA_JSON,
+            authRequired: true
         });
         
         
         // This is just to simplify tests. It is not recommended as a real resource pattern
-        let requiredProperties = action === "requiredProperty" ? ["requiredProperty"] : undefined;
+        let requiredProperties = label === "requiredProperty" ? ["requiredProperty"] : undefined;
 
         this.setSearchSchema({
             per_page: {

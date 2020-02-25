@@ -11,13 +11,13 @@ interface JsonRepresentationDefaults {
     set: (models: any, requestBody: any, auth: any, key?: string) => void;
     resolve: (models: any, auth: any, key?: string) => any;
 }
-export declare type JSONSchema = {
+export interface JSONSchema {
     [x: string]: any;
     properties?: JSONSchemaProperties;
-};
-export declare type JSONSchemaProperties = {
+}
+export interface JSONSchemaProperties {
     [x: string]: JSONSchema;
-};
+}
 /**
  *
  *

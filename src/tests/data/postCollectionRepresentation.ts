@@ -1,8 +1,10 @@
 import JSONRepresentation from "../../Representation/jsonRepresentation";
 import postRepresentation from './postRepresentation';
+import { PostCollectionActions } from "./postCollectionResource";
+
 
 export default class CollectionRepresentation extends JSONRepresentation {
-    constructor (action: string) {
+    constructor (action: PostCollectionActions) {
         super();
 
         this.init({

@@ -5,13 +5,6 @@
  * 
  */
 
-// Things this should support
-// 1. if-modified-since
-// 2. etag
-// 3. translate data to one of many media types
-// 4. accept input via one of many media types
-// 5. patch media types (configurable)
-
 import authParser from './authParser';
 import { parse as parseContentType } from 'content-type';
 import * as Accept from '@hapi/accept';
@@ -43,7 +36,7 @@ import {
     MethodNotAllowedError
 } from '../core/httpErrors';
 
-import { WritableRepresentation, ReadableRepresentationConstructor, WritableRepresentationConstructor } from '../Representation/representation';
+import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
 
 const globalDefaults: { [action: string]: ActionConfig } = {
     get: {
@@ -84,11 +77,11 @@ const globalDefaults: { [action: string]: ActionConfig } = {
     }
 };
 
-type RequestMediaTypeList = { [type: string]: WritableRepresentationConstructor }
-type ResponseMediaTypeList = { [type: string]: ReadableRepresentationConstructor }
-type AuthSchemeList = { [scheme: string]: Function };
+interface RequestMediaTypeList { [type: string]: WritableRepresentation }
+interface ResponseMediaTypeList{ [type: string]: ReadableRepresentation }
+interface AuthSchemeList { [scheme: string]: Function };
 
-export type ActionConfig = {
+export interface ActionConfig {
     method?: string,
     status?: number,
     requestMediaTypes?: RequestMediaTypeList,
@@ -100,21 +93,18 @@ export type ActionConfig = {
     authSchemes?: AuthSchemeList
 }
 
-export type ActionList = { 
+export interface ActionList { 
     [action: string]: Action;
 }
 
-export type Action = (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any) => Promise<void> | void;
-
-export type ParsedURLParams = {[x: string]: string | number};
-
-export interface ResourceConstructor {
-    new(configDefaults: ActionConfig, supportedActions: keyof ActionList | Array<keyof ActionList>): Resource;
+export interface Action {
+    (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any): Promise<void> | void
 }
+
+export interface ParsedURLParams {[x: string]: string | number};
 
 export default abstract class Resource {
     protected actionConfigs: {[action: string]: ActionConfig}
-    protected configDefaults: ActionConfig;
     protected searchSchema: {[x: string]: any} = {};
     protected requiredSearchProperties?: Array<string>;
     protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string): object;
@@ -127,22 +117,8 @@ export default abstract class Resource {
      * @param {object} configDefaults 
      * @param {array<string>} supportedActions 
      */
-    constructor (configDefaults: ActionConfig, supportedActions: keyof ActionList | Array<keyof ActionList>) {
-
-        if (!Array.isArray(supportedActions)) {
-            supportedActions = [supportedActions];
-        }
-
+    constructor () {
         this.actionConfigs = {};
-
-        supportedActions.forEach((action) => {
-            // Technically I could assign configDefaults here, but it would
-            // get a little weird with the other setActions, so I keep this simple
-            this.actionConfigs[action] = {};
-        });
-
-        // TODO: If you add both the submit and append actions, you have two POST actions. We should error in that case
-        this.configDefaults = configDefaults;
     }
 
     /**
@@ -199,17 +175,17 @@ export default abstract class Resource {
                 this.getActionConfig(action, 'authSchemes') as AuthSchemeList);
             
             let parsedRequestBody: any;
-            let RequestMediaHandler: WritableRepresentationConstructor | undefined = undefined;
+            let requestMediaHandler: WritableRepresentation | undefined = undefined;
 
             if (requestBody && this.getActionConfig(action, 'allowRequestBody')) {
                 /*
                 * Identify the proper request representation from the accept header
                 */
-                RequestMediaHandler = this.getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
+                requestMediaHandler = this.getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE], 
                     this.getActionConfig(action, 'defaultRequestMediaType') as string, 
                     this.getActionConfig(action, 'requestMediaTypes') as RequestMediaTypeList);
 
-                parsedRequestBody = await (new RequestMediaHandler(action)).parseInput(requestBody);
+                parsedRequestBody = await requestMediaHandler.parseInput(requestBody);
             } else {
                 /*
                 * Here's a safe short cut if we want the request to still work even though we
@@ -236,13 +212,12 @@ export default abstract class Resource {
             let acceptedContentType = Accept.charset(requestHeaders[HEADER_ACCEPT] || 
                 this.getActionConfig(action, 'defaultResponseMediaType') as string, Object.keys(this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList));
 
-            let ResponseMediaHandler = this.getResponseMediaHandler(acceptedContentType, this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList);
-            let responseMediaHandler = new ResponseMediaHandler(action);
+            let responseMediaHandler = this.getResponseMediaHandler(acceptedContentType, this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList);
 
             /**
              * Perform the HTTP action and get the response
              */
-            await this.actions[action](models, parsedRequestBody, RequestMediaHandler ? new RequestMediaHandler(action): undefined, requestAuth);
+            await this.actions[action](models, parsedRequestBody, requestMediaHandler, requestAuth);
             // todo: find a less janky way to handle this method===delete response handler
             return new Response(method === METHOD_DELETE ? '': responseMediaHandler.render(models, requestAuth, true), this.getActionConfig(action, 'status') as number, {
                 "content-type": acceptedContentType
@@ -291,11 +266,6 @@ export default abstract class Resource {
     protected getActionConfig (action: keyof ActionList, field: keyof ActionConfig) {
         if (typeof(this.actionConfigs[action][field]) !== "undefined") {
             return this.actionConfigs[action][field];
-        }
-
-        // client configurable global defaults across all azaction
-        if (typeof(this.configDefaults[field]) !== "undefined") {
-            return this.configDefaults[field];
         }
 
         // roads defaults for global defaults on a per-action basis

@@ -7,17 +7,17 @@
 /// <reference types="node" />
 import { Response } from 'roads';
 import { URLSearchParams, URL } from 'url';
-import { WritableRepresentation, ReadableRepresentationConstructor, WritableRepresentationConstructor } from '../Representation/representation';
-declare type RequestMediaTypeList = {
-    [type: string]: WritableRepresentationConstructor;
-};
-declare type ResponseMediaTypeList = {
-    [type: string]: ReadableRepresentationConstructor;
-};
-declare type AuthSchemeList = {
+import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
+interface RequestMediaTypeList {
+    [type: string]: WritableRepresentation;
+}
+interface ResponseMediaTypeList {
+    [type: string]: ReadableRepresentation;
+}
+interface AuthSchemeList {
     [scheme: string]: Function;
-};
-export declare type ActionConfig = {
+}
+export interface ActionConfig {
     method?: string;
     status?: number;
     requestMediaTypes?: RequestMediaTypeList;
@@ -27,22 +27,20 @@ export declare type ActionConfig = {
     defaultRequestMediaType?: string;
     authRequired?: boolean;
     authSchemes?: AuthSchemeList;
-};
-export declare type ActionList = {
+}
+export interface ActionList {
     [action: string]: Action;
-};
-export declare type Action = (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any) => Promise<void> | void;
-export declare type ParsedURLParams = {
+}
+export interface Action {
+    (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any): Promise<void> | void;
+}
+export interface ParsedURLParams {
     [x: string]: string | number;
-};
-export interface ResourceConstructor {
-    new (configDefaults: ActionConfig, supportedActions: keyof ActionList | Array<keyof ActionList>): Resource;
 }
 export default abstract class Resource {
     protected actionConfigs: {
         [action: string]: ActionConfig;
     };
-    protected configDefaults: ActionConfig;
     protected searchSchema: {
         [x: string]: any;
     };
@@ -56,7 +54,7 @@ export default abstract class Resource {
      * @param {object} configDefaults
      * @param {array<string>} supportedActions
      */
-    constructor(configDefaults: ActionConfig, supportedActions: keyof ActionList | Array<keyof ActionList>);
+    constructor();
     /**
      *
      * @param name
@@ -129,7 +127,7 @@ export default abstract class Resource {
      * @param {*} representations
      * @param {*} defaultMediaType
      */
-    protected getResponseMediaHandler(acceptedContentType: string, representations: ResponseMediaTypeList): ReadableRepresentationConstructor;
+    protected getResponseMediaHandler(acceptedContentType: string, representations: ResponseMediaTypeList): ReadableRepresentation;
     /**
      * Returns the proper representation provided by the client, as defined by it's contentType
      *
@@ -137,7 +135,7 @@ export default abstract class Resource {
      * @param {*} defaultContentType
      * @param {*} representations
      */
-    protected getRequestMediaHandler(contentTypeHeader: string | undefined, defaultContentType: string, representations: RequestMediaTypeList): WritableRepresentationConstructor;
+    protected getRequestMediaHandler(contentTypeHeader: string | undefined, defaultContentType: string, representations: RequestMediaTypeList): WritableRepresentation;
     /**
      * Ensures that the search parameters in the request uri match this resources searchSchema
      * @param {*} searchParams

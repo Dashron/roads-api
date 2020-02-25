@@ -17,15 +17,13 @@ interface JsonRepresentationDefaults {
     resolve: (models: any, auth: any, key?: string) => any
 }
 
-type RenderFunction = (item: object, auth: any, stringify: boolean) => string | object
-
 // This is a placeholder. Ideally this will fully map the json schema format
-export type JSONSchema = {
+export interface JSONSchema {
     [x: string]: any,
     properties?: JSONSchemaProperties 
 }
 
-export type JSONSchemaProperties = {
+export interface JSONSchemaProperties {
     [x: string]: JSONSchema
 }
 
