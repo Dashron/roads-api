@@ -3,7 +3,7 @@ const BASE_URL = 'http://dashron.com';
 import { URL } from 'url';
 import { Response } from 'roads';
 import Resource, { ParsedURLParams } from '../../Resource/resource';
-import { HTTPError } from '../../core/httpErrors';
+import { HTTPErrors } from '../../index';
 
 // body must be a string
 function fixBody(body: any) {
@@ -18,7 +18,7 @@ function fixBody(body: any) {
     return body.toString();
 }
 
-function ensureInvalidRequest(resource: Resource, method: string, url: URL, urlParams: ParsedURLParams | undefined, body: any, headers: {[x: string]: string}, message: string, additionalProblems?: Array<HTTPError>) {
+function ensureInvalidRequest(resource: Resource, method: string, url: URL, urlParams: ParsedURLParams | undefined, body: any, headers: {[x: string]: string}, message: string, additionalProblems?: Array<HTTPErrors.HTTPError>) {
     body = fixBody(body);
     if (!additionalProblems) {
         additionalProblems = [];

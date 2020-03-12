@@ -6,7 +6,7 @@
  */
 /// <reference types="node" />
 import { URL } from 'url';
-import { URITemplate as URITemplateType } from 'uri-templates';
+import uriTemplate = require('uri-templates');
 import Resource from '../Resource/resource';
 import { Middleware } from 'roads/types/core/road';
 interface RouteConfig {
@@ -18,7 +18,7 @@ interface RouteConfig {
     };
 }
 interface Route {
-    compiledTemplate: URITemplateType;
+    compiledTemplate: uriTemplate.URITemplate;
     config?: RouteConfig;
     resource: Resource;
 }

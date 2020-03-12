@@ -1,7 +1,7 @@
 import Router from '../../core/router';
 import PostResource from '../data/postResource';
 let postResource = new PostResource('GET');
-import {URL} from 'url';
+import { URL } from 'url';
 import { Road, Response } from 'roads';
 
 describe('router tests', () => {

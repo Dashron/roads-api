@@ -7,7 +7,6 @@
 
 import { URL } from 'url';
 import uriTemplate = require('uri-templates');
-import { URITemplate as URITemplateType } from 'uri-templates';
 import validateObj from './objectValidator';
 import { InputValidationError, NotFoundError } from './httpErrors';
 import Resource from '../Resource/resource';
@@ -46,7 +45,7 @@ interface RouteConfig {
 }
 
 interface Route {
-    compiledTemplate: URITemplateType,
+    compiledTemplate: uriTemplate.URITemplate,
     config?: RouteConfig,
     resource: Resource
 }

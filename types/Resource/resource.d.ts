@@ -99,6 +99,7 @@ export default abstract class Resource {
      * If there is not one explicitly set, it checks the cross-action config defaults configured via the resource constructor
      * If there is not one in the cross-action config defaults it checks global defaults
      *
+     * @todo I hate this. Ideally we could have the config value checking happen in the IDE thanks to typescript
      * @param {string} action
      * @param {string} field
      */

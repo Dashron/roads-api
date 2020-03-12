@@ -1,11 +1,11 @@
-import { HTTPError } from '../../core/httpErrors';
+import { HTTPErrors } from '../../index';
 import { Response } from 'roads';
 
 describe('http error tests', () => {
     test('test http error response generation', function () {
         expect.assertions(3);
 
-        let error = new HTTPError('Hello!');
+        let error = new HTTPErrors.HTTPError('Hello!');
         let response = error.toResponse();
         expect(response).toBeInstanceOf(Response);
         expect(response.status).toEqual(500);
@@ -21,9 +21,9 @@ describe('http error tests', () => {
     test('test additional problems generation', function () {
         expect.assertions(3);
 
-        let error = new HTTPError('Hello!');
-        error.addAdditionalProblem(new HTTPError('Another problem!'));
-        error.addAdditionalProblem(new HTTPError('Yet another problem!'));
+        let error = new HTTPErrors.HTTPError('Hello!');
+        error.addAdditionalProblem(new HTTPErrors.HTTPError('Another problem!'));
+        error.addAdditionalProblem(new HTTPErrors.HTTPError('Yet another problem!'));
 
         let response = error.toResponse();
         expect(response).toBeInstanceOf(Response);
