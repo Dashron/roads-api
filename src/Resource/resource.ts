@@ -98,7 +98,7 @@ export interface ActionList {
 }
 
 export interface Action {
-    (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any): Promise<void> | void
+    (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any): Promise<any> | void
 }
 
 export interface ParsedURLParams {[x: string]: string | number};
