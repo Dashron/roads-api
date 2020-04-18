@@ -277,7 +277,7 @@ export default abstract class Resource {
         throw new Error(this.constructor.name + 
             ' has attempted to access a missing config value for the action ' + 
             action + ' and the field ' + field + 
-            '. There is no default for this config, so you must provide it manually in the resource constructor, or when invoking addAction.');
+            '. There is no default for this config, so you must provide it manually when invoking addAction.');
     }
 
     /**
