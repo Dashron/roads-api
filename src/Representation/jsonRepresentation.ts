@@ -114,7 +114,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
                     throw new Error('No resolver found for this schema');
                 }
             case "array":
-                return this.renderSchemaArray(schema.items, schema.resolveArrayItems(models, auth), auth);
+                return this.renderSchemaArray(schema.representation, schema.resolveArrayItems(models, auth), auth);
             case "object":
                 return this.renderSchemaProperties(schema.properties as JSONSchemaProperties, models, auth);
             default:
@@ -139,11 +139,12 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
      * @param {any} auth 
      * @returns {array<object>} An array representation of the provided models
      */
-    protected renderSchemaArray (schemaItems: ReadableRepresentation, modelItems: Array<object>, auth: any): Array<object> {
+    protected renderSchemaArray (schemaRepresentation: JSONRepresentation, modelItems: Array<object>, auth: any): Array<object> {
         let items: Array<object> = [];
 
         modelItems.forEach((item: object) => {
-            items.push(schemaItems.render(item, auth, false) as Object);
+            // Todo: should this be aware of the actual representation object of the schema items?
+            items.push(schemaRepresentation.renderSchema(schemaRepresentation.getSchema(), item, auth) as Object);
         });
     
         return items;

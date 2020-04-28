@@ -1,10 +1,7 @@
 import JSONRepresentation from "../../Representation/jsonRepresentation";
-import postRepresentation from './postRepresentation';
-import { PostCollectionActions } from "./postCollectionResource";
-
 
 export default class CollectionRepresentation extends JSONRepresentation {
-    constructor (action: PostCollectionActions) {
+    constructor (action: string, itemRepresentation: JSONRepresentation, resolveArrayItems: Function) {
         super();
 
         this.init({
@@ -12,11 +9,9 @@ export default class CollectionRepresentation extends JSONRepresentation {
             "properties": {
                 "data": {
                     "type": "array",
-                    // I would love this class to be more generic, and have items and resolveArrayItems be passed in, but right now it doesn't work.
-                    "items": new postRepresentation(action),
-                    "resolveArrayItems": (models: any) => {
-                        return models.posts;
-                    }
+                    "items": itemRepresentation.getSchema(),
+                    "representation": itemRepresentation,
+                    "resolveArrayItems": resolveArrayItems
                 },
                 "perPage": {
                     "type": "number",

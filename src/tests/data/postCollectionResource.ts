@@ -5,7 +5,7 @@ import { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } from '../../core/constants'
 import { ParsedURLParams, ActionList } from "../../Resource/resource";
 import tokenResolver from './tokenResolver';
 
-import PostCollectionRepresentation from './postCollectionRepresentation';
+import CollectionRepresentation from './collectionRepresentation';
 import PostRepresentation from "./postRepresentation";
 import posts, { createPosts } from './blogStorage';
 
@@ -17,7 +17,9 @@ export default class PostCollectionResource extends Resource {
 
         this.addAction("get", () => {}, {
             authSchemes: { [AUTH_BEARER]: tokenResolver },
-            responseMediaTypes: { [MEDIA_JSON]: new PostCollectionRepresentation("get") },
+            responseMediaTypes: { [MEDIA_JSON]: new CollectionRepresentation("get", new PostRepresentation("get"), (models: any) => {
+                return models.posts;
+            }) },
             authRequired: true,
             defaultResponseMediaType: MEDIA_JSON
         });
@@ -40,7 +42,9 @@ export default class PostCollectionResource extends Resource {
         }, {
             authSchemes: { [AUTH_BEARER]: tokenResolver },
             requestMediaTypes: { [MEDIA_JSON]: new PostRepresentation("append") },
-            responseMediaTypes: { [MEDIA_JSON]: new PostCollectionRepresentation("append") },
+            responseMediaTypes: { [MEDIA_JSON]: new CollectionRepresentation("append", new PostRepresentation("append"), (models: any) => {
+                return models.posts;
+            }) },
             defaultRequestMediaType: MEDIA_JSON_MERGE,
             defaultResponseMediaType: MEDIA_JSON,
             authRequired: true

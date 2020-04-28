@@ -71,7 +71,7 @@ export default abstract class JSONRepresentation implements ReadableRepresentati
      * @param {any} auth
      * @returns {array<object>} An array representation of the provided models
      */
-    protected renderSchemaArray(schemaItems: ReadableRepresentation, modelItems: Array<object>, auth: any): Array<object>;
+    protected renderSchemaArray(schemaRepresentation: JSONRepresentation, modelItems: Array<object>, auth: any): Array<object>;
     /**
      * Turns an object into a JSON representation
      *
