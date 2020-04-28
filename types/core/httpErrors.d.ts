@@ -48,6 +48,7 @@ export declare class NotAcceptableError extends HTTPError {
 export declare class UnprocessableEntityError extends HTTPError {
     constructor(message: string);
 }
-export declare class InputValidationError extends module.exports.InvalidRequestError {
+export declare class InputValidationError extends InvalidRequestError {
+    fieldErrors: Array<string>;
     constructor(message: string, fieldErrors: Array<string>);
 }

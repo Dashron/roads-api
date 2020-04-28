@@ -173,7 +173,9 @@ export class UnprocessableEntityError extends HTTPError {
     }
 }
 
-export class InputValidationError extends module.exports.InvalidRequestError {
+export class InputValidationError extends InvalidRequestError {
+    public fieldErrors: Array<string>;
+    
     constructor(message: string, fieldErrors: Array<string>) {
         super(message);
         this.fieldErrors = fieldErrors;
