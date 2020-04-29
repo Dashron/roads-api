@@ -199,7 +199,6 @@ export default abstract class Resource {
              * Initates the validation of the query parameters, and if valid sends those parameters to this resources "modelsResolver" function.
              */
             await this.validateSearchParams(urlObject.searchParams);
-``
             /*
              * Locte a collection of models for this request. These models are provided to the action, and are not manipulated in any way by this framework.
              * The API developer should assume that they can do whatever they want with provided models
@@ -398,9 +397,11 @@ export default abstract class Resource {
      * 
      * @param {*} e 
      */
-    protected  buildErrorResponse(e: Error) {
-        if (e instanceof HTTPError) {
-            return (e as HTTPError).toResponse();
+    protected  buildErrorResponse(e: Error): Response {
+        if ('toResponse' in e) {
+            // @ts-ignore We're ignoring the fact that error doesn't technically have toResponse, because of the "in" check.
+            // We have to do this because previously this check was "instanceof HttpError", and if you have two require'd roads-apis (such as roads starter, and someone using roads starter) you might end up with a different httperror
+            return e.toResponse();
         }
 
         console.log(e);
