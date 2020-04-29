@@ -5,7 +5,7 @@
  *
  */
 import { InvalidRequestError, HTTPError, ProblemPayload } from '../core/httpErrors';
-interface FieldErrorPayload extends ProblemPayload {
+export interface FieldErrorPayload extends ProblemPayload {
     field?: string;
 }
 export declare class ValidationError extends InvalidRequestError {
@@ -16,4 +16,3 @@ export declare class FieldError extends InvalidRequestError {
     constructor(message: string, field: string);
     protected buildPayload(): FieldErrorPayload;
 }
-export {};

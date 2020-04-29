@@ -7,7 +7,7 @@
 
 import { InvalidRequestError, HTTPError, ProblemPayload} from '../core/httpErrors';
 
-interface FieldErrorPayload extends ProblemPayload {
+export interface FieldErrorPayload extends ProblemPayload {
     field?: string
 }
 
