@@ -45,7 +45,7 @@ export default abstract class Resource {
         [x: string]: any;
     };
     protected requiredSearchProperties?: Array<string>;
-    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string): object;
+    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string, requestAuth: any): object;
     protected actions: ActionList;
     /**
      * Creates an instance of Resource.

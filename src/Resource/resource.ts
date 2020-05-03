@@ -107,7 +107,7 @@ export default abstract class Resource {
     protected actionConfigs: {[action: string]: ActionConfig}
     protected searchSchema: {[x: string]: any} = {};
     protected requiredSearchProperties?: Array<string>;
-    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string): object;
+    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string, requestAuth: any): object;
     protected actions: ActionList = {};
 
     /**
@@ -203,7 +203,8 @@ export default abstract class Resource {
              * Locte a collection of models for this request. These models are provided to the action, and are not manipulated in any way by this framework.
              * The API developer should assume that they can do whatever they want with provided models
              */
-            let models = await this.modelsResolver(urlParams, urlObject.searchParams, action, urlObject.pathname);
+            // TODO: the order of these params are strange. this could use cleanup.
+            let models = await this.modelsResolver(urlParams, urlObject.searchParams, action, urlObject.pathname, requestAuth);
 
             /*
              * Find the appropriate resource representation for this resource, and the client's request
