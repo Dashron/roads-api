@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "types/index.d.ts",
   "scripts": {
-    "test": "node node_modules/jest/bin/jest.js src/tests/",
+    "test": "node node_modules/eslint/bin/eslint.js ./ && tsc && node node_modules/jest/bin/jest.js src/tests/",
     "build": "tsc"
   },
   "repository": {
@@ -19,21 +19,28 @@
   },
   "homepage": "https://github.com/Dashron/roads-api#readme",
   "dependencies": {
-    "@hapi/accept": "5.0.1",
-    "ajv": "6.12.2",
+    "@hapi/accept": "5.0.2",
+    "ajv": "8.0.0",
     "auth-header": "1.0.0",
     "content-type": "1.0.4",
-    "roads": "6.2.6",
     "uri-templates": "^0.2.0",
-    "@types/uri-templates": "0.1.30"
+    "@types/uri-templates": "0.1.31"
+  },
+  "peerDependencies": {
+    "roads": "6.X"
   },
   "devDependencies": {
+    "roads": "6.X",
     "@types/content-type": "1.1.3",
-    "@types/jest": "^25.2.1",
-    "@types/node": "12.12.14",
-    "jest": "25.4.0",
+    "@types/jest": "^26.0.21",
+    "@types/node": "^14.9.0",
+    "jest": "26.6.3",
+    "@typescript-eslint/eslint-plugin": "^4.18.0",
+    "@typescript-eslint/parser": "^4.18.0",
+    "eslint": "^7.22.0",
+    "prettier": "^2.2.1",
     "request": "2.88.2",
-    "ts-jest": "25.4.0",
-    "typescript": "^3.8.2"
+    "ts-jest": "26.5.4",
+    "typescript": "^4.2.3"
   }
 }

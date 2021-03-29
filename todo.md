@@ -1,7 +1,10 @@
 TODO:
+-1. Clean up eslint
+0. Explicit assignment of wildcard default set/resolve functions to specific fields. array of names or something
 0. Can we get addAction's initial type to have some sort of validation? maybe generics? see postCollectionResource's PostCollectionActions type for an example.
-1. defaultRequestMediaType should be optional, and shouldn't throw an error (resource.resolve)
-2. Add resource support for if-modified-since, etag
+1. Can we pull out roads dependency? It seems to only be for the Response (and some types)
+2. defaultRequestMediaType should be optional, and shouldn't throw an error (resource.resolve)
+3. Add resource support for if-modified-since, etag
 4. don't send a content-type header if there's no response body (particularly with 204 responses) I THINK. Check spec
 5. Lower level Resource unit tests
 6. Lower level Representation unit tests
