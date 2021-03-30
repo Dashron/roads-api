@@ -1,6 +1,6 @@
 /**
  * httpErrors.ts
- * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
+ * Copyright(c) 2021 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
  *
  */
@@ -8,8 +8,11 @@ import { Response } from 'roads';
 export interface ProblemPayload {
     title: string;
     status: number;
-    "additional-problems": Array<ProblemPayload>;
+    'additional-problems': Array<ProblemPayload>;
 }
+/**
+ *
+ */
 export declare class HTTPError extends Error {
     status: number;
     protected additionalProblems: Array<HTTPError>;

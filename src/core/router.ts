@@ -86,7 +86,7 @@ export default class Router {
 	 * @return An object with two properties. Resource, which is the relevant Resource object for this route.
 	 * 		urlParams which is an object containing all the url params and values in url.
 	 */
-	async locateResource(url: URL) {
+	async locateResource(url: URL): Promise<false | { resource: Resource, urlParams: {[key: string]: string} }> {
 		let urlParams = null;
 
 		for(let i = 0; i < this.routes.length; i++) {
@@ -119,7 +119,7 @@ export default class Router {
 		return false;
 	}
 
-	middleware (protocol: string, hostname: string) {
+	middleware (protocol: string, hostname: string): Middleware {
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const router = this;
 		const middleware: Middleware = async function (

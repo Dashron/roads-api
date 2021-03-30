@@ -1,37 +1,37 @@
 /**
  * validationError.ts
- * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
+ * Copyright(c) 2021 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
- * 
+ *
  */
 
 import { InvalidRequestError, HTTPError, ProblemPayload} from '../core/httpErrors';
 
 export interface FieldErrorPayload extends ProblemPayload {
-    field?: string
+	field?: string
 }
 
 export class ValidationError extends InvalidRequestError {
-    constructor(message: string, fieldErrors: Array<HTTPError>) {
-        super(message);
+	constructor(message: string, fieldErrors: Array<HTTPError>) {
+		super(message);
 
-        fieldErrors.forEach((error) => {
-            this.addAdditionalProblem(error);
-        });
-    }
+		fieldErrors.forEach((error) => {
+			this.addAdditionalProblem(error);
+		});
+	}
 }
 
 export class FieldError extends InvalidRequestError {
-    fieldName: string;
+	fieldName: string;
 
-    constructor(message: string, field: string) {
-        super(message);
-        this.fieldName = field;
-    }
+	constructor(message: string, field: string) {
+		super(message);
+		this.fieldName = field;
+	}
 
-    protected buildPayload(): FieldErrorPayload {
-        let payload: FieldErrorPayload = super.buildPayload();
-        payload.field = this.fieldName;
-        return payload;
-    }
+	protected buildPayload(): FieldErrorPayload {
+		const payload: FieldErrorPayload = super.buildPayload();
+		payload.field = this.fieldName;
+		return payload;
+	}
 }

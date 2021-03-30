@@ -1,8 +1,8 @@
 /**
  * index.ts
- * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
+ * Copyright(c) 2021 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
- * 
+ *
  */
 
 export { default as Resource } from './Resource/resource';

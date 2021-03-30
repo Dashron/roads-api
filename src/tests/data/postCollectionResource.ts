@@ -15,16 +15,22 @@ export default class PostCollectionResource extends Resource {
 	constructor(label: string) {
 		super();
 
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
 		this.addAction('get', () => {}, {
 			authSchemes: { [AUTH_BEARER]: tokenResolver },
-			responseMediaTypes: { [MEDIA_JSON]: new CollectionRepresentation('get', new PostRepresentation('get'), (models: any) => {
-				return models.posts;
-			}) },
+			responseMediaTypes: {
+				[MEDIA_JSON]: new CollectionRepresentation('get', new PostRepresentation('get'), (models: any) => {
+					return models.posts;
+				})
+			},
 			authRequired: true,
 			defaultResponseMediaType: MEDIA_JSON
 		});
 
-		this.addAction('append', (models: {posts: Array<Post>}, requestBody: any, requestMediaHandler: WritableRepresentation, auth: any) => {
+		this.addAction('append', (models: {
+			posts: Array<Post>
+		}, requestBody: any, requestMediaHandler: WritableRepresentation, auth: any) => {
+
 			const directPosts = createPosts();
 
 			if (requestBody.whatever) {
@@ -42,9 +48,11 @@ export default class PostCollectionResource extends Resource {
 		}, {
 			authSchemes: { [AUTH_BEARER]: tokenResolver },
 			requestMediaTypes: { [MEDIA_JSON]: new PostRepresentation('append') },
-			responseMediaTypes: { [MEDIA_JSON]: new CollectionRepresentation('append', new PostRepresentation('append'), (models: any) => {
-				return models.posts;
-			}) },
+			responseMediaTypes: {
+				[MEDIA_JSON]: new CollectionRepresentation('append', new PostRepresentation('append'), (models: any) => {
+					return models.posts;
+				})
+			},
 			defaultRequestMediaType: MEDIA_JSON_MERGE,
 			defaultResponseMediaType: MEDIA_JSON,
 			authRequired: true
@@ -68,7 +76,10 @@ export default class PostCollectionResource extends Resource {
 	}
 
 	// I don't like this. why doesn't the abstract class know the parameter types?
-	modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string) {
+	modelsResolver(
+		urlParams: ParsedURLParams | undefined,
+		searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string) {
+
 		const models: {[x: string]: any} = {};
 
 		if (searchParams === undefined || searchParams.get('per_page') === null) {

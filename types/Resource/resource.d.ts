@@ -1,6 +1,6 @@
 /**
  * resource.ts
- * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
+ * Copyright(c) 2021 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
  *
  */
@@ -8,14 +8,18 @@
 import { Response } from 'roads';
 import { URLSearchParams, URL } from 'url';
 import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
+import { IncomingHeaders } from 'roads/types/core/road';
 interface RequestMediaTypeList {
     [type: string]: WritableRepresentation;
 }
 interface ResponseMediaTypeList {
     [type: string]: ReadableRepresentation;
 }
+interface AuthScheme {
+    (parameters: unknown): unknown;
+}
 interface AuthSchemeList {
-    [scheme: string]: Function;
+    [scheme: string]: AuthScheme;
 }
 export interface ActionConfig {
     method?: string;
@@ -32,7 +36,7 @@ export interface ActionList {
     [action: string]: Action;
 }
 export interface Action {
-    (models: object, requestBody: any, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: any): Promise<any> | void;
+    (models: unknown, requestBody: unknown, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: unknown): Promise<unknown> | void;
 }
 export interface ParsedURLParams {
     [x: string]: string | number;
@@ -42,15 +46,16 @@ export default abstract class Resource {
         [action: string]: ActionConfig;
     };
     protected searchSchema: {
-        [x: string]: any;
+        [x: string]: unknown;
     };
     protected requiredSearchProperties?: Array<string>;
-    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string, requestAuth: any): object;
+    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string, requestAuth: unknown): unknown;
     protected actions: ActionList;
     /**
      * Creates an instance of Resource.
      *
-     * @todo it would be cool if we could expose "expected url parameters" in a way that slots well with the router and raises warnings
+     * @todo it would be cool if we could expose "expected url parameters" in a way that
+     * 		slots well with the router and raises warnings
      * @param {object} configDefaults
      * @param {array<string>} supportedActions
      */
@@ -70,7 +75,7 @@ export default abstract class Resource {
      * @todo: json schema type
      */
     setSearchSchema(schema: {
-        [x: string]: any;
+        [x: string]: unknown;
     }, requiredProperties?: Array<string>): void;
     /**
      * Performs your API action for a specific HTTP request on this resource
@@ -81,9 +86,7 @@ export default abstract class Resource {
      * @param {string} requestBody This should be a string representation of the request body.
      * @param {object} requestHeaders This should be an object containing all request headers.
      */
-    resolve(method: string, urlObject: URL, urlParams?: ParsedURLParams, requestBody?: string, requestHeaders?: {
-        [x: string]: string;
-    }): Promise<Response>;
+    resolve(method: string, urlObject: URL, urlParams?: ParsedURLParams, requestBody?: string, requestHeaders?: IncomingHeaders): Promise<Response>;
     /**
      * Find the appropriate resource action for this HTTP method
      *
@@ -103,7 +106,7 @@ export default abstract class Resource {
      * @param {string} action
      * @param {string} field
      */
-    protected getActionConfig(action: keyof ActionList, field: keyof ActionConfig): string | number | boolean | RequestMediaTypeList | ResponseMediaTypeList | AuthSchemeList | undefined;
+    protected getActionConfig(action: keyof ActionList, field: keyof ActionConfig): unknown;
     /**
      * This will parse the authorization header and send the resulting data
      * into the configured authResolvers.
@@ -111,16 +114,15 @@ export default abstract class Resource {
      * A clients authResolver should return null if the user is unauthenticated  (TODO: What error?)
      * A clients authResolver should throw an error if the credentials are not valid
      *
-     * This method will throw an error if the resource is configured to require authentication (via authRequired), and the user is unauthenticated
+     * This method will throw an error if the resource is configured to require authentication (via authRequired),
+     * 		and the user is unauthenticated
      *
      * @param {string} authorizationHeader
      * @param {boolean} authRequired
      * @param {array<string>} validSchemes
      * @returns
      */
-    protected getAuth(authorizationHeader: string, authRequired: boolean, authSchemes: {
-        [x: string]: Function;
-    }): Promise<any>;
+    protected getAuth(authorizationHeader: string | Array<string> | undefined, authRequired: boolean, authSchemes: AuthSchemeList): Promise<unknown>;
     /**
      * Returns the proper representation requested by the client via the accept header
      *
@@ -128,7 +130,7 @@ export default abstract class Resource {
      * @param {*} representations
      * @param {*} defaultMediaType
      */
-    protected getResponseMediaHandler(acceptedContentType: string, representations: ResponseMediaTypeList): ReadableRepresentation;
+    protected getResponseMediaHandler(acceptedContentType: string | Array<string> | undefined, representations: ResponseMediaTypeList): ReadableRepresentation;
     /**
      * Returns the proper representation provided by the client, as defined by it's contentType
      *
@@ -141,7 +143,7 @@ export default abstract class Resource {
      * Ensures that the search parameters in the request uri match this resources searchSchema
      * @param {*} searchParams
      */
-    protected validateSearchParams(searchParams: URLSearchParams): Promise<any>;
+    protected validateSearchParams(searchParams: URLSearchParams): Promise<string | Array<string>>;
     /**
      * Turns an error into a proper Response object.
      * HTTPErrors use their toResponse method.
@@ -149,6 +151,6 @@ export default abstract class Resource {
      *
      * @param {*} e
      */
-    protected buildErrorResponse(e: Error): Response;
+    protected buildErrorResponse(e: unknown): Response;
 }
 export {};

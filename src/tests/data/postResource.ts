@@ -5,61 +5,64 @@ import { Post, createPosts } from './blogStorage';
 import { WritableRepresentation } from '../../Representation/representation';
 import { NotFoundError } from '../../core/httpErrors';
 import { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } from '../../core/constants';
-export type PostActions = "get" | "delete" | "partialEdit";
+export type PostActions = 'get' | 'delete' | 'partialEdit';
 
-let posts = createPosts();
+const posts = createPosts();
 
 export default class PostResource extends Resource {
-    protected label: string;
+	protected label: string;
 
-    constructor(label: string) {
-        super();
+	constructor(label: string) {
+		super();
 
-        this.addAction("get", () => {}, {
-            authSchemes: { [ AUTH_BEARER ]: tokenResolver },
-            responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation("get") },
-            defaultResponseMediaType: MEDIA_JSON,
-            defaultRequestMediaType: MEDIA_JSON,
-            authRequired: true,
-        });
-        
-        this.addAction("delete", (models: Post) => {
-            models.delete();
-        }, {
-            authSchemes: { [ AUTH_BEARER ]: tokenResolver },
-            responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation("delete") },
-            defaultResponseMediaType: MEDIA_JSON,
-            defaultRequestMediaType: MEDIA_JSON,
-            authRequired: true,
-        });
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
+		this.addAction('get', () => {}, {
+			authSchemes: { [ AUTH_BEARER ]: tokenResolver },
+			responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation('get') },
+			defaultResponseMediaType: MEDIA_JSON,
+			defaultRequestMediaType: MEDIA_JSON,
+			authRequired: true,
+		});
 
-        this.addAction("partialEdit", (models: Post, requestBody: any, RequestMediaHandler: WritableRepresentation, auth: any) => {
-            RequestMediaHandler.applyEdit(requestBody, models, auth);
-            models.save();
-        }, {
-            authSchemes: { [ AUTH_BEARER ]: tokenResolver },
-            requestMediaTypes: { [MEDIA_JSON_MERGE]: new PostRepresentation("partialEdit") },
-            responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation("partialEdit") },
-            defaultRequestMediaType: MEDIA_JSON_MERGE,
-            defaultResponseMediaType: MEDIA_JSON,
-            authRequired: true
-        });
+		this.addAction('delete', (models: Post) => {
+			models.delete();
+		}, {
+			authSchemes: { [ AUTH_BEARER ]: tokenResolver },
+			responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation('delete') },
+			defaultResponseMediaType: MEDIA_JSON,
+			defaultRequestMediaType: MEDIA_JSON,
+			authRequired: true,
+		});
+
+		this.addAction('partialEdit', (
+			models: Post, requestBody: any, RequestMediaHandler: WritableRepresentation, auth: any) => {
+
+			RequestMediaHandler.applyEdit(requestBody, models, auth);
+			models.save();
+		}, {
+			authSchemes: { [ AUTH_BEARER ]: tokenResolver },
+			requestMediaTypes: { [MEDIA_JSON_MERGE]: new PostRepresentation('partialEdit') },
+			responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation('partialEdit') },
+			defaultRequestMediaType: MEDIA_JSON_MERGE,
+			defaultResponseMediaType: MEDIA_JSON,
+			authRequired: true
+		});
 
 
 
-        // This is a quick hack to easily differentiate between two differenet post resources
-        if (label) {
-            this.label = label;
-        }
-    }
+		// This is a quick hack to easily differentiate between two differenet post resources
+		if (label) {
+			this.label = label;
+		}
+	}
 
-    modelsResolver(urlParams: { "post_id": number }) {
-        let post = posts[urlParams.post_id];
-        
-        if (post) {
-            return post;
-        }
+	modelsResolver(urlParams: { 'post_id': number }) {
+		const post = posts[urlParams.post_id];
 
-        throw new NotFoundError('Can not find Post');
-    }
-};
+		if (post) {
+			return post;
+		}
+
+		throw new NotFoundError('Can not find Post');
+	}
+}

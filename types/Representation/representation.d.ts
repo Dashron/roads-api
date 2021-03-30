@@ -1,22 +1,22 @@
 /**
  * representation.ts
- * Copyright(c) 2020 Aaron Hedges <aaron@dashron.com>
+ * Copyright(c) 2021 Aaron Hedges <aaron@dashron.com>
  * MIT Licensed
  *
  * A clean base class that defines the common Representation functions used by the Roads API
  */
 export default interface Representation {
 }
-export interface ReadableRepresentation extends Representation {
-    render(models: any, auth: any, stringify: boolean): any;
+export interface ReadableRepresentation<ModelsType, AuthType> extends Representation {
+    render(models: ModelsType, auth: AuthType, stringify: boolean): unknown;
 }
-export interface ReadableRepresentationConstructor {
-    new (action: string): ReadableRepresentation;
+export interface ReadableRepresentationConstructor<ModelsType, AuthType> {
+    new (action: string): ReadableRepresentation<ModelsType, AuthType>;
 }
-export interface WritableRepresentation extends Representation {
-    parseInput(requestBody: string): Promise<any>;
-    applyEdit(requestBody: any, models: object, auth: any): void;
+export interface WritableRepresentation<ModelsType, ReqBodyType, AuthType> extends Representation {
+    parseInput(requestBody: string): Promise<unknown>;
+    applyEdit(requestBody: ReqBodyType, models: ModelsType, auth: AuthType): void;
 }
-export interface WritableRepresentationConstructor {
-    new (action: string): WritableRepresentation;
+export interface WritableRepresentationConstructor<ModelsType, ReqBodyType, AuthType> {
+    new (action: string): WritableRepresentation<ModelsType, ReqBodyType, AuthType>;
 }

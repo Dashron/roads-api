@@ -1,3 +1,3 @@
 export default (token: string) => {
-    return true;
+	return true;
 };
