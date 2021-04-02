@@ -4,20 +4,22 @@
  * MIT Licensed
  *
  * Exposes the JSONRepresentation class that adds some useful functionality for JSON resource representations
+ *
+ * todo: Woah buddy, this thing has some crazy generics going on. I'm sure it can be improved.
  */
 
-import AJV, { _, KeywordCxt, JSONSchemaType, Options } from 'ajv';
+import AJV, { _, KeywordCxt, JSONSchemaType, Options, ErrorObject } from 'ajv';
 import { ValidationError, FieldError } from './validationError';
 import { InvalidRequestError, HTTPError } from '../core/httpErrors';
 import { ReadableRepresentation, WritableRepresentation } from './representation';
-import { RequiredError } from 'ajv/dist/vocabularies/validation/required';
-import { PropertiesSchema } from 'ajv/dist/types/json-schema';
 
-interface JsonRepresentationDefaults<ModelsType, ReqBodyType, AuthType> {
-	set: (models: ModelsType, requestBody: ReqBodyType, auth: AuthType, key?: string) => void,
+interface JsonRepresentationDefaults<ModelsType, AuthType> {
+	set: (models: ModelsType, requestBody: unknown, auth: AuthType, key?: string) => void,
 	resolve: (models: ModelsType, auth: AuthType, key?: string) => unknown
 }
 
+interface NestedRequestObject {[x: string]: unknown}
+interface SchemaProperties {[x: string]: JSONSchemaType<unknown>}
 
 /**
  *
@@ -31,7 +33,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	// todo: hmmm... is this right? does the schema type have the item its representing, or the schema format
 	protected schema: JSONSchemaType<ReqBodyType>;
 	protected schemaValidatorOptions: Options;
-	protected defaults?: JsonRepresentationDefaults<ModelsType, ReqBodyType, AuthType>;
+	protected defaults?: JsonRepresentationDefaults<ModelsType, AuthType>;
 
 	/**
 	 *
@@ -43,7 +45,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 */
 	init (
 		schema: JSONSchemaType<ReqBodyType>, schemaValidatorOptions?: Options,
-		defaults?: JsonRepresentationDefaults<ModelsType, ReqBodyType, AuthType>): void {
+		defaults?: JsonRepresentationDefaults<ModelsType, AuthType>): void {
 
 		this.schema = schema;
 		this.schemaValidatorOptions = schemaValidatorOptions || {};
@@ -75,14 +77,14 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @param {boolean} stringify
 	 * @returns {*} The JSON representation for these models. Stringified if stringify=true
 	 */
-	render (models: ModelsType, auth: AuthType, stringify = true): unknown {
+	render (models: ModelsType, auth: AuthType, stringify = true): string {
 		let output = this.renderSchema(this.getSchema(), models, auth);
 
 		if (stringify) {
 			output = JSON.stringify(output);
 		}
 
-		return output;
+		return String(output);
 	}
 
 	/**
@@ -122,12 +124,12 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 		}
 	}
 
-	protected canBeRendered(schema: JSONSchemaType<ReqBodyType>): boolean {
+	protected canBeRendered(schema: JSONSchemaType<unknown>): boolean {
 		// we can render strings numbers and missing types if there is a resolve method
 		return ((['string', 'number', 'boolean', undefined].indexOf(schema.type) >= 0) &&
-			(schema.resolve || (this.defaults && this.defaults.resolve))) ||
+			(schema.resolve !== undefined || (this.defaults !== undefined && this.defaults.resolve !== undefined))) ||
 		// we can render array items if there is a resolveArrayItems method
-			(schema.type === 'array' && schema.resolveArrayItems) ||
+			(schema.type === 'array' && schema.resolveArrayItems !== undefined) ||
 		// we will attempt to render all objects
 			(schema.type === 'object');
 	}
@@ -162,8 +164,8 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @param {any} auth
 	 * @returns {object} An object representation of the provided models
 	 */
-	protected renderSchemaProperties<SubSchema> (
-		properties: PropertiesSchema<SubSchema>, models: ModelsType, auth: AuthType): {[x: string]: unknown} {
+	protected renderSchemaProperties (
+		properties: SchemaProperties, models: ModelsType, auth: AuthType): {[x: string]: unknown} {
 
 		const obj: {[x: string]: unknown} = {};
 
@@ -209,20 +211,23 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 			} ,
 		});
 
-		const compiledSchema = ajv.compile(this.getSchema());
+		const validate = ajv.compile(this.getSchema());
 		let isValid = false;
 
+		// If async, then is the data, err is a ajv.ValidationError
 		if (this.getSchema().$async) {
 			try {
-				return await compiledSchema(parsedBody);
+				return await validate(parsedBody);
 			} catch(errors) {
 				throw new ValidationError('Invalid request body', errors);
 			}
+		// When not async, validate returns a boolean and we want to return the original data
+		// Errors also need to be formatted properly
 		} else {
-			isValid = compiledSchema(parsedBody) as boolean;
+			isValid = validate(parsedBody);
 
 			if (!isValid) {
-				if (!compiledSchema.errors) {
+				if (!validate.errors) {
 					throw new Error('AJV Interface has likely changed. ' +
 						'Please check to see how synchronous errors are reported');
 				}
@@ -230,17 +235,17 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 				// https://tools.ietf.org/html/rfc5789#section-2.2
 				const errors: Array<HTTPError> = [];
 
-				compiledSchema.errors.forEach((error: RequiredError) => {
+				validate.errors.forEach((error: ErrorObject) => {
 					// if the error is a missing required field, we don't have a data path.
 					//		The conditional below changes that to the value located in
-					let dataPath = error.dataPath;
+					let instancePath = error.instancePath;
 
 					if (error.keyword === 'required') {
-						dataPath += `/${  error.params.missingProperty}`;
+						instancePath += `/${  error.params.missingProperty}`;
 					}
 
 					errors.push(new FieldError(error.message ?
-						error.message : 'Could not determine error message as a part of schema validation', dataPath));
+						error.message : 'Could not determine error message as a part of schema validation', instancePath));
 				});
 
 				throw new ValidationError('Invalid request body', errors);
@@ -276,6 +281,13 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 		schema: JSONSchemaType<ReqBodyType>,
 		requestBody: ReqBodyType, models: ModelsType, auth: AuthType, key?: string): void {
 
+		return this._applyRequest(schema, requestBody, models, auth, key);
+	}
+
+	protected _applyRequest (
+		schema: JSONSchemaType<ReqBodyType> | JSONSchemaType<unknown>,
+		requestBody: unknown, models: ModelsType, auth: AuthType, key?: string): void {
+
 		if (typeof(requestBody) === 'undefined') {
 			return;
 		}
@@ -301,7 +313,8 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 				throw new Error('Arrays are yet supported in input schemas');
 				//return this._renderSchemaArray(schema.items, schema.resolveArrayItems(models, auth), auth);
 			case 'object':
-				this.applyRequestProperties(schema.properties, requestBody, models, auth);
+				// Because of the JSON Schema Validation, we know this is going to be an object.
+				this.applyRequestProperties(schema.properties, requestBody as {[x: string]: unknown}, models, auth);
 				break;
 			default:
 				throw new Error(`Unsupported schema type: ${  schema.type  } in schema ${  JSON.stringify(schema)}`);
@@ -319,14 +332,11 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 		return items;
 	}*/
 
-	protected canBeEdited(schema: JSONSchemaType<ReqBodyType>): boolean {
-		// we can set strings, numbers, booleans and missing types if there is a set method
-		return ((['string', 'number', 'boolean', undefined].indexOf(schema.type) >= 0) &&
-			(schema.set || (this.defaults && this.defaults.set))) ||
-		// we can render array items if there is a resolveArrayItems method
-			//(schema.type === "array" && schema.resolveArrayItems) ||
-		// we will attempt to set all objects properties
-			(schema.type === 'object');
+	// eslint-disable-next-line @typescript-eslint/ban-types
+	protected canBeEdited(schema: JSONSchemaType<unknown>): boolean {
+		return ['string', 'number', 'boolean', undefined].includes(schema.type) &&
+			(schema.set !== undefined || (this.defaults !== undefined && this.defaults.set !== undefined)) ||
+			schema.type === 'object';
 	}
 
 	/**
@@ -338,11 +348,13 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @param {*} auth
 	 */
 	protected applyRequestProperties (
-		properties: JSONSchemaProperties, requestBody: ReqBodyType, models: ModelsType, auth: AuthType): void {
+		schemaProperties: SchemaProperties, requestBody: NestedRequestObject, models: ModelsType, auth: AuthType): void {
 
-		for (const property in properties) {
-			if (this.canBeEdited(properties[property])) {
-				this.applyRequest(properties[property], requestBody[property], models, auth, property);
+		for (const property in schemaProperties) {
+			if (this.canBeEdited(schemaProperties[property])) {
+				this._applyRequest(
+					schemaProperties[property],
+					requestBody[property], models, auth, property);
 			}
 		}
 	}

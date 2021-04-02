@@ -1,6 +1,6 @@
 import { Resource } from '../../index';
-import tokenResolver from './tokenResolver';
-import PostRepresentation from './postRepresentation';
+import tokenResolver, { AuthType } from './tokenResolver';
+import PostRepresentation, { PostReqBody } from './postRepresentation';
 import { Post, createPosts } from './blogStorage';
 import { WritableRepresentation } from '../../Representation/representation';
 import { NotFoundError } from '../../core/httpErrors';
@@ -34,8 +34,8 @@ export default class PostResource extends Resource {
 			authRequired: true,
 		});
 
-		this.addAction('partialEdit', (
-			models: Post, requestBody: any, RequestMediaHandler: WritableRepresentation, auth: any) => {
+		this.addAction('partialEdit', ( models: Post,  requestBody: PostReqBody,
+			RequestMediaHandler: WritableRepresentation<Post, PostReqBody, AuthType>, auth: AuthType) => {
 
 			RequestMediaHandler.applyEdit(requestBody, models, auth);
 			models.save();
@@ -56,7 +56,7 @@ export default class PostResource extends Resource {
 		}
 	}
 
-	modelsResolver(urlParams: { 'post_id': number }) {
+	modelsResolver(urlParams: { 'post_id': number }): Post {
 		const post = posts[urlParams.post_id];
 
 		if (post) {

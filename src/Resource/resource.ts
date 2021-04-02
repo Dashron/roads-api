@@ -38,6 +38,7 @@ import {
 
 import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
 import { IncomingHeaders } from 'roads/types/core/road';
+import { JSONSchemaType } from 'ajv';
 
 const globalDefaults: { [action: string]: ActionConfig } = {
 	get: {
@@ -78,34 +79,38 @@ const globalDefaults: { [action: string]: ActionConfig } = {
 	}
 };
 
-interface RequestMediaTypeList { [type: string]: WritableRepresentation }
-interface ResponseMediaTypeList { [type: string]: ReadableRepresentation }
-
-interface AuthScheme {
-	(parameters: unknown): unknown
+interface RequestMediaTypeList<ModelsType, ReqBodyType, AuthType> {
+	[type: string]: WritableRepresentation<ModelsType, ReqBodyType, AuthType>
 }
 
-interface AuthSchemeList { [scheme: string]: AuthScheme }
+interface ResponseMediaTypeList<ModelsType, AuthType> { [type: string]: ReadableRepresentation<ModelsType, AuthType> }
+
+interface AuthScheme<AuthType> {
+	(parameters: unknown): AuthType
+}
+
+interface AuthSchemeList<AuthType> { [scheme: string]: AuthScheme<AuthType> }
 
 export interface ActionConfig {
 	method?: string,
 	status?: number,
-	requestMediaTypes?: RequestMediaTypeList,
+	requestMediaTypes?: RequestMediaTypeList<unknown, unknown, unknown>,
 	allowRequestBody?: boolean,
 	defaultResponseMediaType?: string,
-	responseMediaTypes?: ResponseMediaTypeList,
+	responseMediaTypes?: ResponseMediaTypeList<unknown, unknown>,
 	defaultRequestMediaType?: string,
 	authRequired?: boolean,
-	authSchemes?: AuthSchemeList
+	authSchemes?: AuthSchemeList<unknown>
 }
 
 export interface ActionList {
-	[action: string]: Action;
+	[action: string]: Action<unknown, unknown, unknown>;
 }
 
-export interface Action {
-	(models: unknown, requestBody: unknown, requestMediaHandler: WritableRepresentation | undefined,
-		requestAuth?: unknown): Promise<unknown> | void
+export interface Action<ModelsType, ReqBodyType, AuthType> {
+	(models: ModelsType,
+		requestBody: ReqBodyType, requestMediaHandler: WritableRepresentation<ModelsType, ReqBodyType, AuthType> | undefined,
+		requestAuth?: AuthType): Promise<unknown> | void
 }
 
 export interface ParsedURLParams {[x: string]: string | number}
@@ -119,13 +124,21 @@ export interface ParsedURLParams {[x: string]: string | number}
 	globalDefaults[action][key] = value;
 }*/
 
-export default abstract class Resource {
+function getSingleHeader(headers: string | Array<string> | undefined): string | undefined{
+	if (Array.isArray(headers)) {
+		return headers[0];
+	}
+
+	return headers;
+}
+
+export default abstract class Resource<ModelsType, ReqBodyType, SearchType, AuthType> {
 	protected actionConfigs: {[action: string]: ActionConfig}
-	protected searchSchema: {[x: string]: unknown} = {};
+	protected searchSchema: JSONSchemaType<SearchType>;
 	protected requiredSearchProperties?: Array<string>;
 	protected abstract modelsResolver(
 		urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined,
-		action: keyof ActionList, pathname: string, requestAuth: unknown): unknown;
+		action: keyof ActionList, pathname: string, requestAuth: AuthType | null): ModelsType;
 
 	protected actions: ActionList = {};
 
@@ -147,7 +160,7 @@ export default abstract class Resource {
 	 * @param action
 	 * @param config
 	 */
-	addAction (name: keyof ActionList, action: Action, config: ActionConfig = {}): void {
+	addAction (name: keyof ActionList, action: Action<ModelsType, ReqBodyType, AuthType>, config: ActionConfig = {}): void {
 		this.actionConfigs[name] = config;
 		this.actions[name] = action;
 	}
@@ -159,7 +172,7 @@ export default abstract class Resource {
 	 * @param {array} requiredProperties
 	 * @todo: json schema type
 	 */
-	setSearchSchema (schema: {[x: string]: unknown}, requiredProperties?: Array<string>): void {
+	setSearchSchema (schema: JSONSchemaType<SearchType>, requiredProperties?: Array<string>): void {
 		this.searchSchema = schema;
 		this.requiredSearchProperties = requiredProperties;
 	}
@@ -195,18 +208,19 @@ export default abstract class Resource {
 			 */
 			const requestAuth = await this.getAuth(requestHeaders[HEADER_AUTHORIZATION],
 				this.getActionConfig(action, 'authRequired') as boolean,
-				this.getActionConfig(action, 'authSchemes') as AuthSchemeList);
+				this.getActionConfig(action, 'authSchemes') as AuthSchemeList<AuthType>);
 
 			let parsedRequestBody: unknown;
-			let requestMediaHandler: WritableRepresentation | undefined = undefined;
+			let requestMediaHandler: WritableRepresentation<ModelsType, ReqBodyType, AuthType> | undefined = undefined;
 
 			if (requestBody && this.getActionConfig(action, 'allowRequestBody')) {
 				/*
 				* Identify the proper request representation from the accept header
 				*/
-				requestMediaHandler = this.getRequestMediaHandler(requestHeaders[HEADER_CONTENT_TYPE],
+				requestMediaHandler = this.getRequestMediaHandler(getSingleHeader(requestHeaders[HEADER_CONTENT_TYPE]),
 					this.getActionConfig(action, 'defaultRequestMediaType') as string,
-					this.getActionConfig(action, 'requestMediaTypes') as RequestMediaTypeList);
+					this.getActionConfig(action, 'requestMediaTypes') as
+						RequestMediaTypeList<ModelsType, ReqBodyType, AuthType>);
 
 				parsedRequestBody = await requestMediaHandler.parseInput(requestBody);
 			} else {
@@ -234,14 +248,16 @@ export default abstract class Resource {
 
 			/*
 			 * Find the appropriate resource representation for this resource, and the client's request
-			 */
+			*/
 			const acceptedContentType = Accept.charset(
-				requestHeaders[HEADER_ACCEPT] === "string" ||
-				this.getActionConfig(action, 'defaultResponseMediaType') as string,
-				Object.keys(this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList));
+				getSingleHeader(requestHeaders[HEADER_ACCEPT]) ||
+					this.getActionConfig(action, 'defaultResponseMediaType') as string,
+				Object.keys(this.getActionConfig(action, 'responseMediaTypes') as
+					ResponseMediaTypeList<ModelsType, AuthType>));
 
 			const responseMediaHandler = this.getResponseMediaHandler(
-				acceptedContentType, this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList);
+				acceptedContentType, this.getActionConfig(action, 'responseMediaTypes') as
+					ResponseMediaTypeList<ModelsType, AuthType>);
 
 			/**
 			 * Perform the HTTP action and get the response
@@ -328,7 +344,7 @@ export default abstract class Resource {
 	 */
 	protected async getAuth(
 		authorizationHeader: string | Array<string> | undefined,
-		authRequired: boolean, authSchemes: AuthSchemeList): Promise<unknown> {
+		authRequired: boolean, authSchemes: AuthSchemeList<AuthType>): Promise<AuthType | null> {
 
 		let auth = null;
 
@@ -372,7 +388,7 @@ export default abstract class Resource {
 	 */
 	protected getResponseMediaHandler(
 		acceptedContentType: string | Array<string> | undefined,
-		representations: ResponseMediaTypeList ): ReadableRepresentation {
+		representations: ResponseMediaTypeList<ModelsType, AuthType> ): ReadableRepresentation<ModelsType, AuthType> {
 
 		// We only work with one response media type, there shouldn't be an array of values here.
 		if (acceptedContentType && typeof acceptedContentType === 'string' && representations[acceptedContentType]) {
@@ -390,7 +406,9 @@ export default abstract class Resource {
 	 * @param {*} representations
 	 */
 	protected getRequestMediaHandler(contentTypeHeader: string | undefined,
-		defaultContentType: string, representations: RequestMediaTypeList): WritableRepresentation {
+		defaultContentType: string,
+		representations: RequestMediaTypeList<ModelsType, ReqBodyType, AuthType>):
+			WritableRepresentation<ModelsType, ReqBodyType, AuthType> {
 
 		const parsedContentType = parseContentType(contentTypeHeader || defaultContentType);
 
@@ -405,7 +423,7 @@ export default abstract class Resource {
 	 * Ensures that the search parameters in the request uri match this resources searchSchema
 	 * @param {*} searchParams
 	 */
-	protected async validateSearchParams(searchParams: URLSearchParams): Promise<string | Array<string>> {
+	protected async validateSearchParams(searchParams: URLSearchParams): Promise<unknown> {
 
 		const params: {[x: string]: string | Array<string>} = {};
 

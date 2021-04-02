@@ -10,7 +10,7 @@
 export default interface Representation {}
 
 export interface ReadableRepresentation<ModelsType, AuthType> extends Representation {
-    render (models: ModelsType, auth: AuthType, stringify: boolean): unknown;
+    render (models: ModelsType, auth: AuthType | null, stringify: boolean): string;
 }
 
 export interface ReadableRepresentationConstructor<ModelsType, AuthType> {
