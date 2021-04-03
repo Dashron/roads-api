@@ -3,15 +3,18 @@ import { WritableRepresentation } from '../../Representation/representation';
 import { Resource } from '../../index';
 import { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } from '../../core/constants';
 import { ParsedURLParams, ActionList } from '../../Resource/resource';
-import tokenResolver from './tokenResolver';
+import tokenResolver, { AuthType } from './tokenResolver';
 
 import CollectionRepresentation from './collectionRepresentation';
-import PostRepresentation from './postRepresentation';
+import PostRepresentation, { PostReqBody } from './postRepresentation';
 import posts, { createPosts } from './blogStorage';
 
 export type PostCollectionActions = 'get' | 'append';
+type PostCollectionModels = {
+	posts: Array<Post>
+};
 
-export default class PostCollectionResource extends Resource {
+export default class PostCollectionResource extends Resource<PostCollectionModels, PostReqBody | Post, AuthType> {
 	constructor(label: string) {
 		super();
 
@@ -19,20 +22,24 @@ export default class PostCollectionResource extends Resource {
 		this.addAction('get', () => {}, {
 			authSchemes: { [AUTH_BEARER]: tokenResolver },
 			responseMediaTypes: {
-				[MEDIA_JSON]: new CollectionRepresentation('get', new PostRepresentation('get'), (models: any) => {
-					return models.posts;
-				})
+				[MEDIA_JSON]: new CollectionRepresentation(
+					'get', new PostRepresentation('get'), (models: PostCollectionModels) => {
+
+						return models.posts;
+					}
+				)
 			},
 			authRequired: true,
 			defaultResponseMediaType: MEDIA_JSON
 		});
 
-		this.addAction('append', (models: {
-			posts: Array<Post>
-		}, requestBody: any, requestMediaHandler: WritableRepresentation, auth: any) => {
+		this.addAction('append', (models: PostCollectionModels, requestBody: PostReqBody,
+			requestMediaHandler: WritableRepresentation<{posts: Array<Post>}, PostReqBody | Post, AuthType>,
+			auth: AuthType) => {
 
 			const directPosts = createPosts();
 
+			//ts-ignore ts(2339) We want to ignore this, the point is to fail if it's wrong
 			if (requestBody.whatever) {
 				// this helps with a test
 				throw new Error('unwanted extra parameter made it through validation.');

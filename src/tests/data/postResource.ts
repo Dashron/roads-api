@@ -9,7 +9,7 @@ export type PostActions = 'get' | 'delete' | 'partialEdit';
 
 const posts = createPosts();
 
-export default class PostResource extends Resource {
+export default class PostResource extends Resource<Post, PostReqBody, AuthType> {
 	protected label: string;
 
 	constructor(label: string) {

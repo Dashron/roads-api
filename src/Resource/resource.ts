@@ -132,9 +132,9 @@ function getSingleHeader(headers: string | Array<string> | undefined): string | 
 	return headers;
 }
 
-export default abstract class Resource<ModelsType, ReqBodyType, SearchType, AuthType> {
+export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	protected actionConfigs: {[action: string]: ActionConfig}
-	protected searchSchema: JSONSchemaType<SearchType>;
+	protected searchSchema: JSONSchemaType<unknown>;
 	protected requiredSearchProperties?: Array<string>;
 	protected abstract modelsResolver(
 		urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined,
@@ -172,7 +172,7 @@ export default abstract class Resource<ModelsType, ReqBodyType, SearchType, Auth
 	 * @param {array} requiredProperties
 	 * @todo: json schema type
 	 */
-	setSearchSchema (schema: JSONSchemaType<SearchType>, requiredProperties?: Array<string>): void {
+	setSearchSchema (schema: JSONSchemaType<unknown>, requiredProperties?: Array<string>): void {
 		this.searchSchema = schema;
 		this.requiredSearchProperties = requiredProperties;
 	}

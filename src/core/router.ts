@@ -46,14 +46,14 @@ interface RouteConfig {
 	}
 }
 
-interface Route {
+interface Route<ModelsType, ReqBodyType, AuthType> {
 	compiledTemplate: uriTemplate.URITemplate,
 	config?: RouteConfig,
-	resource: Resource
+	resource: Resource<ModelsType, ReqBodyType, AuthType>
 }
 
 export default class Router {
-	protected routes: Array<Route>;
+	protected routes: Array<Route<unknown, unknown, unknown>>;
 
 	constructor () {
 		this.routes = [];
@@ -68,8 +68,10 @@ export default class Router {
 	 * 		with "schema" and "required" properties. These properties are used alongside the standard
 	 * 		objectValidator to validate any URI params.
 	 */
-	addResource(template: string, resource: Resource, config?: RouteConfig): void {
-		const route: Route = {
+	addResource<ModelsType, ReqBodyType, AuthType>(
+		template: string, resource: Resource<ModelsType, ReqBodyType, AuthType>, config?: RouteConfig): void {
+
+		const route: Route<ModelsType, ReqBodyType, AuthType> = {
 			compiledTemplate: uriTemplate(template),
 			config: config,
 			resource: resource
@@ -86,7 +88,9 @@ export default class Router {
 	 * @return An object with two properties. Resource, which is the relevant Resource object for this route.
 	 * 		urlParams which is an object containing all the url params and values in url.
 	 */
-	async locateResource(url: URL): Promise<false | { resource: Resource, urlParams: {[key: string]: string} }> {
+	async locateResource(url: URL):
+		Promise<false | { resource: Resource<unknown, unknown, unknown>, urlParams: {[key: string]: string}}> {
+
 		let urlParams = null;
 
 		for(let i = 0; i < this.routes.length; i++) {

@@ -3,10 +3,13 @@ import PostCollectionResource from '../data/postCollectionResource';
 import { Response } from 'roads';
 import Resource, { ParsedURLParams } from '../../Resource/resource';
 import { IncomingHeaders } from 'roads/types/core/road';
-import { HTTPError } from '../../core/httpErrors';
 
 const BASE_URL = 'http://dashron.com';
 import { URL } from 'url';
+import { Post } from '../data/blogStorage';
+import { PostReqBody } from '../data/postRepresentation';
+import { AuthType } from '../data/tokenResolver';
+import { FieldErrorPayload } from '../../Representation/validationError';
 
 // body must be a string
 function fixBody(body: any): string | undefined {
@@ -21,17 +24,17 @@ function fixBody(body: any): string | undefined {
 	return body.toString();
 }
 
-function ensureInvalidRequest(
-	resource: Resource, method: string, url: URL,
-	urlParams: ParsedURLParams | undefined, body: any,
-	headers: IncomingHeaders | undefined, message: string, additionalProblems: Array<object>) {
+function ensureInvalidRequest<ModelType, ReqBodyType, AuthType> (
+	resource: Resource<ModelType, ReqBodyType, AuthType> , method: string, url: URL,
+	urlParams: ParsedURLParams | undefined, body: Partial<ReqBodyType>,
+	headers: IncomingHeaders | undefined, message: string, additionalProblems: Array<FieldErrorPayload>) {
 
-	body = fixBody(body);
+	const strBody = fixBody(body);
 	if (!additionalProblems) {
 		additionalProblems = [];
 	}
 
-	return resource.resolve(method, url, urlParams, body, headers)
+	return resource.resolve(method, url, urlParams, strBody, headers)
 		.then((response: Response) => {
 			expect(response).toEqual(
 				new Response(JSON.stringify({
@@ -40,9 +43,9 @@ function ensureInvalidRequest(
 		});
 }
 
-function ensureValidRequest(
-	resource: Resource, method: string, url: URL,
-	urlParams: ParsedURLParams | undefined, body: any,
+function ensureValidRequest<ModelType, ReqBodyType, AuthType> (
+	resource: Resource<ModelType, ReqBodyType, AuthType> , method: string, url: URL,
+	urlParams: ParsedURLParams | undefined, body: Partial<ReqBodyType> | undefined,
 	headers: IncomingHeaders | undefined, expectedResponse: Response) {
 
 	return resource.resolve(method, url, urlParams, fixBody(body), headers)
@@ -55,7 +58,7 @@ describe('blog resource tests', () => {
 	test('Test GET Resource execution', function () {
 		expect.assertions(1);
 
-		return ensureValidRequest(
+		return ensureValidRequest<Post, PostReqBody, AuthType>(
 			new PostResource('get'),
 			'GET',
 			new URL('/posts/12345', BASE_URL),
@@ -263,7 +266,7 @@ describe('blog resource tests', () => {
 		expect.assertions(1);
 
 		// Edit resource
-		return ensureValidRequest(
+		return ensureValidRequest<Post, PostReqBody, AuthType>(
 			new PostResource('edit'),
 			'PATCH',
 			new URL('/posts/12345', BASE_URL),
@@ -288,7 +291,7 @@ describe('blog resource tests', () => {
 	test('Test Invalid PATCH Resource execution', function () {
 		expect.assertions(1);
 
-		return ensureInvalidRequest(
+		return ensureInvalidRequest<Post, PostReqBody, AuthType>(
 			new PostResource('edit'),
 			'PATCH',
 			new URL('/posts/12345', BASE_URL),
@@ -312,7 +315,7 @@ describe('blog resource tests', () => {
 		expect.assertions(1);
 
 		// Delete resource
-		return ensureValidRequest(
+		return ensureValidRequest<Post, PostReqBody, AuthType>(
 			new PostResource('delete'),
 			'DELETE',
 			new URL('/posts/12345', BASE_URL),

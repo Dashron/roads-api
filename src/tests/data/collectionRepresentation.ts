@@ -1,7 +1,11 @@
 import JSONRepresentation from '../../Representation/jsonRepresentation';
 
-export default class CollectionRepresentation extends JSONRepresentation {
-	constructor (action: string, itemRepresentation: JSONRepresentation, resolveArrayItems: Function) {
+export default class CollectionRepresentation<Post, PostReqBody, AuthType> extends
+	JSONRepresentation<Post, PostReqBody, AuthType> {
+
+	constructor (
+		action: string, itemRepresentation: JSONRepresentation<Post, PostReqBody, AuthType>, resolveArrayItems: Function) {
+
 		super();
 
 		this.init({
