@@ -2,9 +2,9 @@ import { JSONRepresentation } from '../../index';
 import { Post } from './blogStorage';
 import { PostActions } from './postResource';
 import { PostCollectionActions } from './postCollectionResource';
-import { AuthType } from './tokenResolver';
+import { AuthFormat } from './tokenResolver';
 
-export interface PostReqBody {
+export interface PostFormat {
 	id: number,
 	title: string,
 	post: string,
@@ -17,7 +17,7 @@ export interface PostReqBody {
 type KeyOfPost = keyof Post;
 
 export default class PostRepresentation extends
-	JSONRepresentation<Post, PostReqBody, AuthType> {
+	JSONRepresentation<PostFormat, Post, AuthFormat> {
 
 	constructor (action: PostActions | PostCollectionActions) {
 		super();
@@ -38,7 +38,7 @@ export default class PostRepresentation extends
 						return models.title;
 					},
 					// eslint-disable-next-line @typescript-eslint/no-unused-vars
-					set: (models: Post, title: string, requestAuth: AuthType) => {
+					set: (models: Post, title: string, requestAuth: AuthFormat) => {
 						models.title = title;
 					}
 				},
@@ -51,7 +51,7 @@ export default class PostRepresentation extends
 						return models.active === 1 ? true : false;
 					},
 					// eslint-disable-next-line @typescript-eslint/no-unused-vars
-					set: (models: Post, active: boolean, requestAuth: AuthType) => {
+					set: (models: Post, active: boolean, requestAuth: AuthFormat) => {
 						models.active = active ? 1 : 0;
 					}
 				},
@@ -65,7 +65,7 @@ export default class PostRepresentation extends
 								return 'nestedValue';
 							},
 							// eslint-disable-next-line @typescript-eslint/no-unused-vars
-							set: (models: Post, nestedField: string, requestAuth: AuthType) => {
+							set: (models: Post, nestedField: string, requestAuth: AuthFormat) => {
 								// do nothing, never set this value
 							}
 						}
@@ -76,10 +76,10 @@ export default class PostRepresentation extends
 			additionalProperties: false,
 			required: action === 'append' ? ['title', 'post', 'nestingTest', 'active'] : []
 		}, undefined, {
-			resolve: (models: Post, auth: AuthType, key: keyof Post) => {
+			resolve: (models: Post, auth: AuthFormat, key: keyof Post) => {
 				return models[key];
 			},
-			set:<K extends KeyOfPost>(models: Post, requestValue: Post[K], auth: AuthType, key: K) => {
+			set:<K extends KeyOfPost>(models: Post, requestValue: Post[K], auth: AuthFormat, key: K) => {
 				models[key] = requestValue;
 			}
 		});

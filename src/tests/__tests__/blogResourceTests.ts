@@ -22,7 +22,7 @@ function fixBody(body: any): string | undefined {
 }
 
 function ensureInvalidRequest (
-	resource: Resource<unknown, unknown, unknown> , method: string, url: URL,
+	resource: Resource<unknown, unknown> , method: string, url: URL,
 	urlParams: ParsedURLParams | undefined, body: unknown,
 	headers: IncomingHeaders | undefined, message: string, additionalProblems: Array<FieldErrorPayload>) {
 
@@ -41,7 +41,7 @@ function ensureInvalidRequest (
 }
 
 function ensureValidRequest (
-	resource: Resource<unknown, unknown, unknown> , method: string, url: URL,
+	resource: Resource<unknown, unknown> , method: string, url: URL,
 	urlParams: ParsedURLParams | undefined, body: unknown | undefined,
 	headers: IncomingHeaders | undefined, expectedResponse: Response) {
 

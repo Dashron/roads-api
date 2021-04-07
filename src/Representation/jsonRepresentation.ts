@@ -14,9 +14,9 @@ import { InvalidRequestError, HTTPError } from '../core/httpErrors';
 import { ReadableRepresentation, WritableRepresentation } from './representation';
 import { SomeJSONSchema } from 'ajv/dist/types/json-schema';
 
-interface JsonRepresentationDefaults<ModelsType, AuthType> {
-	set: (models: ModelsType, requestBody: unknown, auth: AuthType, key?: string) => void,
-	resolve: (models: ModelsType, auth: AuthType, key?: string) => unknown
+interface JsonRepresentationDefaults<Models, Auth> {
+	set: (models: Models, requestBody: unknown, auth: Auth, key?: string) => void,
+	resolve: (models: Models, auth: Auth, key?: string) => unknown
 }
 
 // TODO: I think we can improve this with generics
@@ -31,12 +31,12 @@ export interface ResolveArrayItems {
  * @todo thorough examples of the representation format
  * @todo tests
 */
-export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthType> implements
-	ReadableRepresentation<ModelsType, AuthType>, WritableRepresentation<ModelsType, ReqBodyType, AuthType> {
+export default abstract class JSONRepresentation<RepresentationFormat, Models, Auth> implements
+	ReadableRepresentation<Models, Auth>, WritableRepresentation<RepresentationFormat, Models, Auth> {
 
 	protected schema: SomeJSONSchema;
 	protected schemaValidatorOptions: Options;
-	protected defaults?: JsonRepresentationDefaults<ModelsType, AuthType>;
+	protected defaults?: JsonRepresentationDefaults<Models, Auth>;
 
 	/**
 	 *
@@ -47,8 +47,8 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * 		Currently this supports a "set" and "resolve" fallback for schemas.
 	 */
 	init (
-		schema: JSONRepresentation<ModelsType, ReqBodyType, AuthType>['schema'], schemaValidatorOptions?: Options,
-		defaults?: JsonRepresentationDefaults<ModelsType, AuthType>): void {
+		schema: JSONRepresentation<RepresentationFormat, Models, Auth>['schema'], schemaValidatorOptions?: Options,
+		defaults?: JsonRepresentationDefaults<Models, Auth>): void {
 
 		this.schema = schema;
 		this.schemaValidatorOptions = schemaValidatorOptions || {};
@@ -68,7 +68,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 *
 	 * @returns {object} The schema passed to the constructor
 	 */
-	getSchema(): JSONRepresentation<ModelsType, ReqBodyType, AuthType>['schema'] {
+	getSchema(): JSONRepresentation<RepresentationFormat, Models, Auth>['schema'] {
 		return this.schema;
 	}
 
@@ -80,7 +80,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @param {boolean} stringify
 	 * @returns {*} The JSON representation for these models. Stringified if stringify=true
 	 */
-	render (models: ModelsType, auth: AuthType, stringify = true): string {
+	render (models: Models, auth: Auth, stringify = true): string {
 		let output = this.renderSchema(this.getSchema(), models, auth);
 
 		if (stringify) {
@@ -102,7 +102,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @returns {*} the JSON representation for the provided models
 	 * @throws {Error} if the schema type is not understood by this library
 	 */
-	protected renderSchema (schema: SomeJSONSchema, models: ModelsType, auth: AuthType, key?: string): unknown {
+	protected renderSchema(schema: SomeJSONSchema, models: Models, auth: Auth, key?: string): unknown {
 		switch (schema.type) {
 			case 'string':
 			case 'number':
@@ -146,8 +146,8 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @returns {array<object>} An array representation of the provided models
 	 */
 	protected renderSchemaArray (
-		schemaRepresentation: JSONRepresentation<ModelsType, ReqBodyType, AuthType>,
-		modelItems: Array<ModelsType>, auth: AuthType): Array<unknown> {
+		schemaRepresentation: JSONRepresentation<RepresentationFormat, Models, Auth>,
+		modelItems: Array<Models>, auth: Auth): Array<unknown> {
 
 		const items: Array<unknown> = [];
 
@@ -168,7 +168,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @returns {object} An object representation of the provided models
 	 */
 	protected renderSchemaProperties (
-		properties: SchemaProperties, models: ModelsType, auth: AuthType): {[x: string]: unknown} {
+		properties: SchemaProperties, models: Models, auth: Auth): {[x: string]: unknown} {
 
 		const obj: {[x: string]: unknown} = {};
 
@@ -279,7 +279,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @param {*} models
 	 * @param {*} auth
 	 */
-	applyEdit (requestBody: ReqBodyType, models: ModelsType, auth: AuthType): void {
+	applyEdit (requestBody: RepresentationFormat, models: Models, auth: Auth): void {
 		this.applyRequest(this.getSchema(), requestBody, models, auth);
 	}
 
@@ -296,14 +296,14 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 */
 	protected applyRequest (
 		schema: SomeJSONSchema,
-		requestBody: ReqBodyType, models: ModelsType, auth: AuthType, key?: string): void {
+		requestBody: RepresentationFormat, models: Models, auth: Auth, key?: string): void {
 
 		return this._applyRequest(schema, requestBody, models, auth, key);
 	}
 
 	protected _applyRequest (
-		schema: JSONSchemaType<ReqBodyType> | SomeJSONSchema,
-		requestBody: unknown, models: ModelsType, auth: AuthType, key?: string): void {
+		schema: JSONSchemaType<RepresentationFormat> | SomeJSONSchema,
+		requestBody: unknown, models: Models, auth: Auth, key?: string): void {
 
 		if (typeof(requestBody) === 'undefined') {
 			return;
@@ -349,7 +349,6 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 		return items;
 	}*/
 
-	// eslint-disable-next-line @typescript-eslint/ban-types
 	protected canBeEdited(schema: SomeJSONSchema): boolean {
 		return ['string', 'number', 'boolean', undefined].includes(schema.type) &&
 			(schema.set !== undefined || (this.defaults !== undefined && this.defaults.set !== undefined)) ||
@@ -365,7 +364,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @param {*} auth
 	 */
 	protected applyRequestProperties (
-		schemaProperties: SchemaProperties, requestBody: NestedRequestObject, models: ModelsType, auth: AuthType): void {
+		schemaProperties: SchemaProperties, requestBody: NestedRequestObject, models: Models, auth: Auth): void {
 
 		for (const property in schemaProperties) {
 			if (this.canBeEdited(schemaProperties[property])) {

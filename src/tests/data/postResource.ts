@@ -1,15 +1,14 @@
 import { Resource } from '../../index';
-import tokenResolver, { AuthType } from './tokenResolver';
-import PostRepresentation, { PostReqBody } from './postRepresentation';
+import tokenResolver, { AuthFormat } from './tokenResolver';
+import PostRepresentation, { PostFormat } from './postRepresentation';
 import { Post, createPosts } from './blogStorage';
-import { WritableRepresentation } from '../../Representation/representation';
 import { NotFoundError } from '../../core/httpErrors';
 import { MEDIA_JSON, MEDIA_JSON_MERGE, AUTH_BEARER } from '../../core/constants';
 export type PostActions = 'get' | 'delete' | 'partialEdit';
 
 const posts = createPosts();
 
-export default class PostResource extends Resource<Post, PostReqBody, AuthType> {
+export default class PostResource extends Resource<Post, AuthFormat> {
 	protected label: string;
 
 	constructor(label: string) {
@@ -24,7 +23,7 @@ export default class PostResource extends Resource<Post, PostReqBody, AuthType> 
 			authRequired: true,
 		});
 
-		this.addAction('delete', (models: Post) => {
+		this.addAction('delete', (models) => {
 			models.delete();
 		}, {
 			authSchemes: { [ AUTH_BEARER ]: tokenResolver },
@@ -34,11 +33,16 @@ export default class PostResource extends Resource<Post, PostReqBody, AuthType> 
 			authRequired: true,
 		});
 
-		this.addAction('partialEdit', ( models: Post,  requestBody: PostReqBody,
-			RequestMediaHandler: WritableRepresentation<Post, PostReqBody, AuthType>, auth: AuthType) => {
+		this.addAction<PostFormat>('partialEdit', (
+			models,
+			requestBody,
+			RequestMediaHandler,
+			auth) => {
 
-			RequestMediaHandler.applyEdit(requestBody, models, auth);
-			models.save();
+			if (RequestMediaHandler && auth) {
+				RequestMediaHandler.applyEdit(requestBody, models, auth);
+				models.save();
+			}
 		}, {
 			authSchemes: { [ AUTH_BEARER ]: tokenResolver },
 			requestMediaTypes: { [MEDIA_JSON_MERGE]: new PostRepresentation('partialEdit') },

@@ -1,6 +1,9 @@
-export type AuthType = true | false;
+import { AuthScheme } from '../../Resource/resource';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export default (token: string): boolean => {
+export type AuthFormat = true | false | undefined;
+
+const authScheme: AuthScheme<AuthFormat> = (token) => {
 	return true;
 };
+
+export default authScheme;

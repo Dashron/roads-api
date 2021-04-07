@@ -7,16 +7,16 @@
  */
 export default interface Representation {
 }
-export interface ReadableRepresentation<ModelsType, AuthType> extends Representation {
-    render(models: ModelsType, auth: AuthType | null, stringify: boolean): string;
+export interface ReadableRepresentation<Models, Auth> extends Representation {
+    render(models: Models, auth: Auth | null, stringify: boolean): string;
 }
-export interface ReadableRepresentationConstructor<ModelsType, AuthType> {
-    new (action: string): ReadableRepresentation<ModelsType, AuthType>;
+export interface ReadableRepresentationConstructor<Models, Auth> {
+    new (action: string): ReadableRepresentation<Models, Auth>;
 }
-export interface WritableRepresentation<ModelsType, ReqBodyType, AuthType> extends Representation {
+export interface WritableRepresentation<RepresentationFormat, Models, Auth> extends Representation {
     parseInput(requestBody: string): Promise<unknown>;
-    applyEdit(requestBody: ReqBodyType, models: ModelsType, auth: AuthType): void;
+    applyEdit(requestBody: RepresentationFormat, models: Models, auth: Auth): void;
 }
-export interface WritableRepresentationConstructor<ModelsType, ReqBodyType, AuthType> {
-    new (action: string): WritableRepresentation<ModelsType, ReqBodyType, AuthType>;
+export interface WritableRepresentationConstructor<RepresentationFormat, Models, Auth> {
+    new (action: string): WritableRepresentation<RepresentationFormat, Models, Auth>;
 }

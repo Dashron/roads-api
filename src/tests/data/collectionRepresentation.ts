@@ -1,12 +1,12 @@
 import { SomeJSONSchema } from 'ajv/dist/types/json-schema';
 import JSONRepresentation, { ResolveArrayItems } from '../../Representation/jsonRepresentation';
 
-export default class CollectionRepresentation<ModelType, ReqBodyType, AuthType> extends
-	JSONRepresentation<ModelType, ReqBodyType, AuthType> {
+export default class CollectionRepresentation<RepresentationFormat, Model, Auth> extends
+	JSONRepresentation<RepresentationFormat, Model, Auth> {
 
 	constructor (
 		action: string,
-		itemRepresentation: JSONRepresentation<ModelType, ReqBodyType, AuthType>,
+		itemRepresentation: JSONRepresentation<RepresentationFormat, Model, Auth>,
 		resolveArrayItems: ResolveArrayItems) {
 
 		super();
@@ -44,29 +44,29 @@ export default class CollectionRepresentation<ModelType, ReqBodyType, AuthType> 
 		/* Error
 		(property) type: "array"
 Argument of type '{ type: "object"; properties: { data: { type: "array"; items: { $ref: string; };
-		representation: JSONRepresentation<ModelType, ReqBodyType, AuthType>;
+		representation: JSONRepresentation<Model, RepresentationFormat, Auth>;
 		resolveArrayItems: ResolveArrayItems<...>; }; perPage: { ...; }; page: { ...; }; };
 		additionalProperties: false; required: never[]; definitions: { ...; }; }' is not assignable
 		to parameter of type 'SomeJSONSchema'.
   Types of property 'properties' are incompatible.
     Type '{ data: { type: "array"; items: { $ref: string; };
-			representation: JSONRepresentation<ModelType, ReqBodyType, AuthType>;
+			representation: JSONRepresentation<Model, RepresentationFormat, Auth>;
 			resolveArrayItems: ResolveArrayItems<...>; }; perPage: { ...; }; page: { ...; }; }'
 			is not assignable to type 'Partial<PropertiesSchema<KnownRecord>>'.
       Property 'data' is incompatible with index signature.
         Type '{ type: "array"; items: { $ref: string; }; representation:
-				JSONRepresentation<ModelType, ReqBodyType, AuthType>; resolveArrayItems: ResolveArrayItems<...>; }'
+				JSONRepresentation<Model, RepresentationFormat, Auth>; resolveArrayItems: ResolveArrayItems<...>; }'
 				is not assignable to type '{ $ref: string; } | (JSONSchemaType<Known, false> &
 					{ const?: Known | undefined; enum?: readonly Known[] | undefined; default?: Known | undefined; })
 					| undefined'.
           Type '{ type: "array"; items: { $ref: string; };
-		  		representation: JSONRepresentation<ModelType, ReqBodyType, AuthType>; resolveArrayItems:
+		  		representation: JSONRepresentation<Model, RepresentationFormat, Auth>; resolveArrayItems:
 				  ResolveArrayItems<...>; }' is not assignable to type '{ type: ("string" | "number"
 				  | "boolean" | "integer")[]; } & { [keyword: string]: any; $id?: string | undefined;
 					$ref?: string | undefined; $defs?: { [x: string]: JSONSchemaType<Known, true> | undefined; }
 					| undefined; definitions?: { ...; } | undefined; } & { ...; }'.
             Type '{ type: "array"; items: { $ref: string; }; representation:
-					JSONRepresentation<ModelType, ReqBodyType, AuthType>; resolveArrayItems: ResolveArrayItems<...>; }'
+					JSONRepresentation<Model, RepresentationFormat, Auth>; resolveArrayItems: ResolveArrayItems<...>; }'
 					 is not assignable to type '{ type: ("string" | "number" | "boolean" | "integer")[]; }'.
               Types of property 'type' are incompatible.
                 Type 'string' is not assignable to type '("string" | "number" | "boolean" | "integer")[]'.ts(2345)

@@ -1,3 +1,4 @@
-export declare type AuthType = true | false;
-declare const _default: (token: string) => boolean;
-export default _default;
+import { AuthScheme } from '../../Resource/resource';
+export declare type AuthFormat = true | false | undefined;
+declare const authScheme: AuthScheme<AuthFormat>;
+export default authScheme;

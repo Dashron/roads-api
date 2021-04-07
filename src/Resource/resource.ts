@@ -39,7 +39,7 @@ import {
 import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
 import { IncomingHeaders } from 'roads/types/core/road';
 
-const globalDefaults: { [action: string]: ActionConfig } = {
+const globalDefaults: { [action: string]: ActionConfig<unknown, unknown, unknown> } = {
 	get: {
 		method: METHOD_GET,
 		status: 200,
@@ -78,25 +78,25 @@ const globalDefaults: { [action: string]: ActionConfig } = {
 	}
 };
 
-interface RequestMediaTypeList<ModelsType, ReqBodyType, AuthType> {
-	[type: string]: WritableRepresentation<ModelsType, ReqBodyType, AuthType>
+interface RequestMediaTypeList<RepresentationFormat, Models, Auth> {
+	[type: string]: WritableRepresentation<RepresentationFormat, Models, Auth>
 }
 
-interface ResponseMediaTypeList<ModelsType, AuthType> { [type: string]: ReadableRepresentation<ModelsType, AuthType> }
+interface ResponseMediaTypeList<Models, Auth> { [type: string]: ReadableRepresentation<Models, Auth> }
 
-interface AuthScheme<AuthType> {
-	(parameters: unknown): AuthType
+export interface AuthScheme<Auth> {
+	(parameters: unknown): Auth
 }
 
-interface AuthSchemeList<AuthType> { [scheme: string]: AuthScheme<AuthType> }
+interface AuthSchemeList<Auth> { [scheme: string]: AuthScheme<Auth> }
 
-export interface ActionConfig {
+export interface ActionConfig<RepresentationFormat, Models, Auth> {
 	method?: string,
 	status?: number,
-	requestMediaTypes?: RequestMediaTypeList<unknown, unknown, unknown>,
+	requestMediaTypes?: RequestMediaTypeList<RepresentationFormat, Models, Auth>,
 	allowRequestBody?: boolean,
 	defaultResponseMediaType?: string,
-	responseMediaTypes?: ResponseMediaTypeList<unknown, unknown>,
+	responseMediaTypes?: ResponseMediaTypeList<Models, Auth>,
 	defaultRequestMediaType?: string,
 	authRequired?: boolean,
 	authSchemes?: AuthSchemeList<unknown>
@@ -106,24 +106,20 @@ export interface ActionList {
 	[action: string]: Action<unknown, unknown, unknown>;
 }
 
-export interface Action<ModelsType, ReqBodyType, AuthType> {
-	(models: ModelsType,
-		requestBody: ReqBodyType, requestMediaHandler: WritableRepresentation<ModelsType, ReqBodyType, AuthType> | undefined,
-		requestAuth?: AuthType): Promise<unknown> | void
+export interface Action<RepresentationFormat, Models, Auth> {
+	(models: Models,
+		requestBody: RepresentationFormat,
+		// The model for request media handler is unknown because many different handlers could be applied
+		//		and the end user will know which one they are working with. This could reasonably
+		//		be different from the models parameter
+		requestMediaHandler?: WritableRepresentation<RepresentationFormat, unknown, Auth>,
+		requestAuth?: Auth): Promise<unknown> | void
 }
 
 export interface ParsedURLParams {[x: string]: string | number}
 
-/*export function updateGlobalDefaults(action: string, key: string, value: any) {
-	if (!globalDefaults[action]) {
-		globalDefaults[action] = {};
-	}
 
-	// TODO: GET THIS WORKING. ADD TESTS. ALLOW SETTING A DEFAULT EXECUTION FUNCTION.
-	globalDefaults[action][key] = value;
-}*/
-
-function getSingleHeader(headers: string | Array<string> | undefined): string | undefined{
+function getSingleHeader(headers: string | Array<string> | undefined): string | undefined {
 	if (Array.isArray(headers)) {
 		return headers[0];
 	}
@@ -131,14 +127,14 @@ function getSingleHeader(headers: string | Array<string> | undefined): string | 
 	return headers;
 }
 
-export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
-	protected actionConfigs: {[action: string]: ActionConfig}
+export default abstract class Resource<Models, Auth> {
+	protected actionConfigs: {[action: string]: ActionConfig<unknown, unknown, unknown>}
 	// TODO: This can be handled better.
 	protected searchSchema: SchemaProperties;
 	protected requiredSearchProperties?: Array<string>;
 	protected abstract modelsResolver(
 		urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined,
-		action: keyof ActionList, pathname: string, requestAuth: AuthType | null): ModelsType;
+		action: keyof ActionList, pathname: string, requestAuth: Auth | null): Models;
 
 	protected actions: ActionList = {};
 
@@ -160,8 +156,10 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	 * @param action
 	 * @param config
 	 */
-	addAction(name: keyof ActionList, action:
-		Action<unknown, unknown, unknown>, config: ActionConfig = {}): void {
+	addAction<RepresentationFormat>(
+		name: keyof ActionList,
+		action: Action<RepresentationFormat, Models, Auth>,
+		config: ActionConfig<RepresentationFormat, Models, Auth> = {}): void {
 
 		this.actionConfigs[name] = config;
 		this.actions[name] = action;
@@ -209,20 +207,19 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 			 * If the credentials are invalid, the client should throw an error (TODO: What error?)
 			 */
 			const requestAuth = await this.getAuth(requestHeaders[HEADER_AUTHORIZATION],
-				this.getActionConfig(action, 'authRequired') as boolean,
-				this.getActionConfig(action, 'authSchemes') as AuthSchemeList<AuthType>);
+				this.getActionConfig(action, 'authRequired'),
+				this.getActionConfig(action, 'authSchemes'));
 
 			let parsedRequestBody: unknown;
-			let requestMediaHandler: WritableRepresentation<ModelsType, ReqBodyType, AuthType> | undefined = undefined;
+			let requestMediaHandler: WritableRepresentation<unknown, unknown, unknown> | undefined = undefined;
 
 			if (requestBody && this.getActionConfig(action, 'allowRequestBody')) {
 				/*
 				* Identify the proper request representation from the accept header
 				*/
 				requestMediaHandler = this.getRequestMediaHandler(getSingleHeader(requestHeaders[HEADER_CONTENT_TYPE]),
-					this.getActionConfig(action, 'defaultRequestMediaType') as string,
-					this.getActionConfig(action, 'requestMediaTypes') as
-						RequestMediaTypeList<ModelsType, ReqBodyType, AuthType>);
+					this.getActionConfig(action, 'defaultRequestMediaType'),
+					this.getActionConfig(action, 'requestMediaTypes'));
 
 				parsedRequestBody = await requestMediaHandler.parseInput(requestBody);
 			} else {
@@ -246,20 +243,19 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 			 */
 			// TODO: the order of these params are strange. this could use cleanup.
 			const models = await this.modelsResolver(
-				urlParams, urlObject.searchParams, action, urlObject.pathname, requestAuth);
+				urlParams, urlObject.searchParams, action, urlObject.pathname, requestAuth as (Auth | null));
 
 			/*
 			 * Find the appropriate resource representation for this resource, and the client's request
 			*/
 			const acceptedContentType = Accept.charset(
 				getSingleHeader(requestHeaders[HEADER_ACCEPT]) ||
-					this.getActionConfig(action, 'defaultResponseMediaType') as string,
-				Object.keys(this.getActionConfig(action, 'responseMediaTypes') as
-					ResponseMediaTypeList<ModelsType, AuthType>));
+					this.getActionConfig(action, 'defaultResponseMediaType'),
+				Object.keys(this.getActionConfig(action, 'responseMediaTypes') as ResponseMediaTypeList<unknown, unknown>));
 
 			const responseMediaHandler = this.getResponseMediaHandler(
-				acceptedContentType, this.getActionConfig(action, 'responseMediaTypes') as
-					ResponseMediaTypeList<ModelsType, AuthType>);
+				acceptedContentType,
+				this.getActionConfig(action, 'responseMediaTypes'));
 
 			/**
 			 * Perform the HTTP action and get the response
@@ -309,11 +305,12 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	 * If there is not one explicitly set, it checks the cross-action config defaults configured via the resource constructor
 	 * If there is not one in the cross-action config defaults it checks global defaults
 	 *
-	 * @todo I hate this. Ideally we could have the config value checking happen in the IDE thanks to typescript
 	 * @param {string} action
 	 * @param {string} field
 	 */
-	protected getActionConfig (action: keyof ActionList, field: keyof ActionConfig): unknown {
+	protected getActionConfig<K extends keyof ActionConfig<unknown, unknown, unknown>> (
+		action: keyof ActionList, field: K): ActionConfig<unknown, unknown, unknown>[K] {
+
 		if (typeof(this.actionConfigs[action][field]) !== 'undefined') {
 			return this.actionConfigs[action][field];
 		}
@@ -346,9 +343,19 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	 */
 	protected async getAuth(
 		authorizationHeader: string | Array<string> | undefined,
-		authRequired: boolean, authSchemes: AuthSchemeList<AuthType>): Promise<AuthType | null> {
+		authRequired?: boolean, authSchemes?: AuthSchemeList<unknown>): Promise<unknown | null> {
 
 		let auth = null;
+		authRequired = authRequired === undefined ? true : authRequired;
+
+		// If no schemes are configured and auth is required, we error and tell the user such
+		if (!authSchemes) {
+			if (!authRequired) {
+				return null;
+			}
+
+			throw new UnauthorizedError('Authorization required', 'None');
+		}
 
 		// If this resource requires authentication, we enforce that behavior here
 		if (!authorizationHeader) {
@@ -390,10 +397,12 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	 */
 	protected getResponseMediaHandler(
 		acceptedContentType: string | Array<string> | undefined,
-		representations: ResponseMediaTypeList<ModelsType, AuthType> ): ReadableRepresentation<ModelsType, AuthType> {
+		representations?: ResponseMediaTypeList<unknown, unknown> ): ReadableRepresentation<unknown, unknown> {
 
 		// We only work with one response media type, there shouldn't be an array of values here.
-		if (acceptedContentType && typeof acceptedContentType === 'string' && representations[acceptedContentType]) {
+		if (acceptedContentType && representations &&
+			typeof acceptedContentType === 'string' && representations[acceptedContentType]) {
+
 			return representations[acceptedContentType];
 		}
 
@@ -407,17 +416,25 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	 * @param {*} defaultContentType
 	 * @param {*} representations
 	 */
-	protected getRequestMediaHandler(contentTypeHeader: string | undefined,
-		defaultContentType: string,
-		representations: RequestMediaTypeList<ModelsType, ReqBodyType, AuthType>):
-			WritableRepresentation<ModelsType, ReqBodyType, AuthType> {
+	protected getRequestMediaHandler(
+		contentTypeHeader?: string,
+		defaultContentType?: string,
+		representations?: RequestMediaTypeList<unknown, unknown, unknown>):
+			WritableRepresentation<unknown, unknown, unknown> {
 
-		const parsedContentType = parseContentType(contentTypeHeader || defaultContentType);
-		if (parsedContentType.type && representations[parsedContentType.type]) {
-			return representations[parsedContentType.type];
+		const contentType = contentTypeHeader || defaultContentType;
+
+		if (contentType && representations) {
+			const parsedContentType = parseContentType(contentType);
+
+			if (parsedContentType.type && representations[parsedContentType.type]) {
+				return representations[parsedContentType.type];
+			}
+
+			throw new UnsupportedMediaTypeError(parsedContentType.type);
 		}
 
-		throw new UnsupportedMediaTypeError(parsedContentType.type);
+		throw new UnsupportedMediaTypeError('Unknown.Media.Type');
 	}
 
 	/**
