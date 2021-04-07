@@ -88,7 +88,7 @@ describe('router tests', () => {
 		// This should really be tested by using two different classes
 		const resource = new PostResource('number resource');
 
-		router.addResource('/posts/{post_id}', postResource, {
+		router.addResource('/posts/{post_id}', resource, {
 			urlParams: {
 				schema: {
 					post_id: {

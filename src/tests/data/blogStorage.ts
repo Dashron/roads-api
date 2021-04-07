@@ -20,17 +20,18 @@ export class Post {
 		this.active = active;
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	// eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/explicit-module-boundary-types
 	save() {
 
 	}
 
-	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	// eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/explicit-module-boundary-types
 	delete() {
 
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function createPosts () {
 	const posts: Array<Post> = [];
 
@@ -44,6 +45,7 @@ export function createPosts () {
 }
 
 export default {
+	// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 	get: (id: number) => {
 		const posts = createPosts();
 
@@ -53,6 +55,7 @@ export default {
 
 		return null;
 	},
+	// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-unused-vars
 	getAll: (page: number, perPage: number) => {
 		const posts = createPosts();
 

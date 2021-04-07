@@ -45,6 +45,7 @@ export default class PostCollectionResource extends Resource<
 			const directPosts = createPosts();
 
 			//Generally you don't want to do this. This is just so the test ensures invalid params don't come through
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			if ((requestBody as any)['whatever']) {
 				// this helps with a test
 				throw new Error('unwanted extra parameter made it through validation.');
@@ -61,6 +62,7 @@ export default class PostCollectionResource extends Resource<
 			authSchemes: { [AUTH_BEARER]: tokenResolver },
 			requestMediaTypes: { [MEDIA_JSON_MERGE]: new PostRepresentation('append') },
 			responseMediaTypes: {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				[MEDIA_JSON]: new CollectionRepresentation('append', new PostRepresentation('append'), (models: any) => {
 					return models.posts;
 				})
@@ -91,6 +93,7 @@ export default class PostCollectionResource extends Resource<
 	modelsResolver(
 		urlParams: ParsedURLParams | undefined,
 		searchParams: URLSearchParams | undefined,
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		action: keyof ActionList, pathname: string): PostCollectionModels {
 
 		const models: PostCollectionModels = {

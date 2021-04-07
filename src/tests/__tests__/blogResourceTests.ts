@@ -8,7 +8,7 @@ const BASE_URL = 'http://dashron.com';
 import { URL } from 'url';
 import { FieldErrorPayload } from '../../Representation/validationError';
 
-// body must be a string
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function fixBody(body: any): string | undefined {
 	if (typeof(body) === 'object') {
 		return JSON.stringify(body);

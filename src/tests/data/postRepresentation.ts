@@ -37,6 +37,7 @@ export default class PostRepresentation extends
 					resolve: (models: Post) => {
 						return models.title;
 					},
+					// eslint-disable-next-line @typescript-eslint/no-unused-vars
 					set: (models: Post, title: string, requestAuth: AuthType) => {
 						models.title = title;
 					}
@@ -49,6 +50,7 @@ export default class PostRepresentation extends
 					resolve: (models: Post) => {
 						return models.active === 1 ? true : false;
 					},
+					// eslint-disable-next-line @typescript-eslint/no-unused-vars
 					set: (models: Post, active: boolean, requestAuth: AuthType) => {
 						models.active = active ? 1 : 0;
 					}
@@ -58,9 +60,11 @@ export default class PostRepresentation extends
 					properties: {
 						nestedField: {
 							type: 'string',
+							// eslint-disable-next-line @typescript-eslint/no-unused-vars
 							resolve: (models: Post) => {
 								return 'nestedValue';
 							},
+							// eslint-disable-next-line @typescript-eslint/no-unused-vars
 							set: (models: Post, nestedField: string, requestAuth: AuthType) => {
 								// do nothing, never set this value
 							}

@@ -6,6 +6,7 @@ import Resource, { ParsedURLParams } from '../../Resource/resource';
 import { ProblemPayload } from '../../core/httpErrors';
 
 // body must be a string
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function fixBody(body: any) {
 	if (typeof(body) === 'object') {
 		return JSON.stringify(body);
@@ -20,6 +21,7 @@ function fixBody(body: any) {
 
 function ensureInvalidRequest(
 	resource: Resource<unknown, unknown, unknown>, method: string, url: URL,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	urlParams: ParsedURLParams | undefined, body: any,
 	headers: {[x: string]: string}, message: string, additionalProblems?: Array<ProblemPayload>) {
 
@@ -40,6 +42,7 @@ function ensureInvalidRequest(
 
 function ensureValidRequest(
 	resource: Resource<unknown, unknown, unknown>, method: string,
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	url: URL, urlParams: ParsedURLParams, body: any, headers: {[x: string]: string}, expectedResponse: Response) {
 
 	body = fixBody(body);
