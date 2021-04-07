@@ -5,6 +5,7 @@
  *
  */
 
+import { ErrorObject } from 'ajv';
 import { Response } from 'roads';
 
 export interface ProblemPayload {
@@ -86,7 +87,7 @@ export class HTTPError extends Error {
 // 415
 export class UnsupportedMediaTypeError extends HTTPError {
 	constructor (contentType: string) {
-		super(`Unsupported content type${  contentType}`);
+		super(`Unsupported content type ${contentType}`);
 		this.status = 415;
 	}
 }
@@ -179,8 +180,16 @@ export class UnprocessableEntityError extends HTTPError {
 export class InputValidationError extends InvalidRequestError {
 	public fieldErrors: Array<string>;
 
-	constructor(message: string, fieldErrors: Array<string>) {
+	constructor(message: string, fieldErrors?: Array<string | ErrorObject>) {
 		super(message);
-		this.fieldErrors = fieldErrors;
+		const parsedErrors: Array<string> = [];
+
+		if (fieldErrors) {
+			fieldErrors.forEach((err) => {
+				parsedErrors.push(err.toString());
+			});
+		}
+
+		this.fieldErrors = parsedErrors;
 	}
 }

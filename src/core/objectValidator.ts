@@ -4,14 +4,19 @@
  * MIT Licensed
  *
  */
-import AJV, { JSONSchemaType } from 'ajv';
+import AJV from 'ajv';
+import { SomeJSONSchema } from 'ajv/dist/types/json-schema';
 
 import { InputValidationError } from './httpErrors';
 
-function buildSchema<T>(propertiesSchema: JSONSchemaType<T>, requiredProperties: Array<string>) {
+export interface SchemaProperties {
+	[x: string]: SomeJSONSchema
+}
+
+function buildSchema(propertiesSchema: SchemaProperties, requiredProperties: Array<string>) {
 	const schema: {
 		type: string,
-		properties: JSONSchemaType<T>,
+		properties: SchemaProperties,
 		additionalProperties: boolean,
 		required?: Array<string>
 	} = {
@@ -32,8 +37,8 @@ function buildSchema<T>(propertiesSchema: JSONSchemaType<T>, requiredProperties:
  * @param {*} propertiesSchema the "properties" section of a JSON schema document. Array or object subschemas will fail
  * @param {*} searchParams
  */
-export default async function validateObject<T>(obj: unknown,
-	propertiesSchema: JSONSchemaType<T>, requiredProperties: Array<string>): Promise<unknown> {
+export default async function validateObject(obj: unknown,
+	propertiesSchema: SchemaProperties, requiredProperties: Array<string>): Promise<boolean> {
 
 	const ajv = new AJV({ // todo: this ajv config should be somewhere else
 		allErrors: true,
@@ -46,9 +51,17 @@ export default async function validateObject<T>(obj: unknown,
 	// todo: caching
 	const compiledSchema = ajv.compile(schema);
 
+	let isValid = false;
+
 	try {
-		return await compiledSchema(obj);
+		isValid = await compiledSchema(obj);
 	} catch(errors) {
 		throw new InputValidationError('Invalid object', errors);
+	}
+
+	if (!isValid) {
+		throw new InputValidationError('Invalid object', compiledSchema.errors ? compiledSchema.errors : undefined);
+	} else {
+		return true;
 	}
 }

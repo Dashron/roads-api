@@ -6,9 +6,6 @@ import { IncomingHeaders } from 'roads/types/core/road';
 
 const BASE_URL = 'http://dashron.com';
 import { URL } from 'url';
-import { Post } from '../data/blogStorage';
-import { PostReqBody } from '../data/postRepresentation';
-import { AuthType } from '../data/tokenResolver';
 import { FieldErrorPayload } from '../../Representation/validationError';
 
 // body must be a string
@@ -24,9 +21,9 @@ function fixBody(body: any): string | undefined {
 	return body.toString();
 }
 
-function ensureInvalidRequest<ModelType, ReqBodyType, AuthType> (
-	resource: Resource<ModelType, ReqBodyType, AuthType> , method: string, url: URL,
-	urlParams: ParsedURLParams | undefined, body: Partial<ReqBodyType>,
+function ensureInvalidRequest (
+	resource: Resource<unknown, unknown, unknown> , method: string, url: URL,
+	urlParams: ParsedURLParams | undefined, body: unknown,
 	headers: IncomingHeaders | undefined, message: string, additionalProblems: Array<FieldErrorPayload>) {
 
 	const strBody = fixBody(body);
@@ -43,9 +40,9 @@ function ensureInvalidRequest<ModelType, ReqBodyType, AuthType> (
 		});
 }
 
-function ensureValidRequest<ModelType, ReqBodyType, AuthType> (
-	resource: Resource<ModelType, ReqBodyType, AuthType> , method: string, url: URL,
-	urlParams: ParsedURLParams | undefined, body: Partial<ReqBodyType> | undefined,
+function ensureValidRequest (
+	resource: Resource<unknown, unknown, unknown> , method: string, url: URL,
+	urlParams: ParsedURLParams | undefined, body: unknown | undefined,
 	headers: IncomingHeaders | undefined, expectedResponse: Response) {
 
 	return resource.resolve(method, url, urlParams, fixBody(body), headers)
@@ -58,7 +55,7 @@ describe('blog resource tests', () => {
 	test('Test GET Resource execution', function () {
 		expect.assertions(1);
 
-		return ensureValidRequest<Post, PostReqBody, AuthType>(
+		return ensureValidRequest(
 			new PostResource('get'),
 			'GET',
 			new URL('/posts/12345', BASE_URL),
@@ -176,14 +173,14 @@ describe('blog resource tests', () => {
 				authorization: 'Bearer abcde'
 			},
 			'Invalid request body',
-			[{title:'should have required property \'title\'',
+			[{title:'must have required property \'title\'',
 				status:400,'additional-problems':[], field: '/title'},
-			{title:'should have required property \'post\'',
+			{title:'must have required property \'post\'',
 				status:400, 'additional-problems':[], field: '/post'},
-			{title:'should have required property \'active\'',
-				status:400, 'additional-problems':[], field: '/active'},
-			{title:'should have required property \'nestingTest\'',
-				status: 400, 'additional-problems':[], field: '/nestingTest'}],
+			{title:'must have required property \'nestingTest\'',
+				status: 400, 'additional-problems':[], field: '/nestingTest'},
+			{title:'must have required property \'active\'',
+				status:400, 'additional-problems':[], field: '/active'}],
 		);
 	});
 
@@ -205,13 +202,13 @@ describe('blog resource tests', () => {
 				authorization: 'Bearer abcde'
 			},
 			'Invalid request body',
-			[{title:'should have required property \'title\'',
+			[{title:'must have required property \'title\'',
 				status:400,'additional-problems':[], field: '/title'},
-			{title:'should have required property \'post\'',
+			{title:'must have required property \'post\'',
 				status:400, 'additional-problems':[], field: '/post'},
-			{title:'should have required property \'active\'',
+			{title:'must have required property \'active\'',
 				status:400, 'additional-problems':[], field: '/active'},
-			{title:'should have required property \'nestedField\'',
+			{title:'must have required property \'nestedField\'',
 				status: 400, 'additional-problems':[], field: '/nestingTest/nestedField'}],
 		);
 	});
@@ -266,7 +263,7 @@ describe('blog resource tests', () => {
 		expect.assertions(1);
 
 		// Edit resource
-		return ensureValidRequest<Post, PostReqBody, AuthType>(
+		return ensureValidRequest(
 			new PostResource('edit'),
 			'PATCH',
 			new URL('/posts/12345', BASE_URL),
@@ -291,7 +288,7 @@ describe('blog resource tests', () => {
 	test('Test Invalid PATCH Resource execution', function () {
 		expect.assertions(1);
 
-		return ensureInvalidRequest<Post, PostReqBody, AuthType>(
+		return ensureInvalidRequest(
 			new PostResource('edit'),
 			'PATCH',
 			new URL('/posts/12345', BASE_URL),
@@ -315,7 +312,7 @@ describe('blog resource tests', () => {
 		expect.assertions(1);
 
 		// Delete resource
-		return ensureValidRequest<Post, PostReqBody, AuthType>(
+		return ensureValidRequest(
 			new PostResource('delete'),
 			'DELETE',
 			new URL('/posts/12345', BASE_URL),

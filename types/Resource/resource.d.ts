@@ -5,51 +5,50 @@
  *
  */
 /// <reference types="node" />
+import { SchemaProperties } from '../core/objectValidator';
 import { Response } from 'roads';
 import { URLSearchParams, URL } from 'url';
 import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
 import { IncomingHeaders } from 'roads/types/core/road';
-interface RequestMediaTypeList {
-    [type: string]: WritableRepresentation;
+interface RequestMediaTypeList<ModelsType, ReqBodyType, AuthType> {
+    [type: string]: WritableRepresentation<ModelsType, ReqBodyType, AuthType>;
 }
-interface ResponseMediaTypeList {
-    [type: string]: ReadableRepresentation;
+interface ResponseMediaTypeList<ModelsType, AuthType> {
+    [type: string]: ReadableRepresentation<ModelsType, AuthType>;
 }
-interface AuthScheme {
-    (parameters: unknown): unknown;
+interface AuthScheme<AuthType> {
+    (parameters: unknown): AuthType;
 }
-interface AuthSchemeList {
-    [scheme: string]: AuthScheme;
+interface AuthSchemeList<AuthType> {
+    [scheme: string]: AuthScheme<AuthType>;
 }
 export interface ActionConfig {
     method?: string;
     status?: number;
-    requestMediaTypes?: RequestMediaTypeList;
+    requestMediaTypes?: RequestMediaTypeList<unknown, unknown, unknown>;
     allowRequestBody?: boolean;
     defaultResponseMediaType?: string;
-    responseMediaTypes?: ResponseMediaTypeList;
+    responseMediaTypes?: ResponseMediaTypeList<unknown, unknown>;
     defaultRequestMediaType?: string;
     authRequired?: boolean;
-    authSchemes?: AuthSchemeList;
+    authSchemes?: AuthSchemeList<unknown>;
 }
 export interface ActionList {
-    [action: string]: Action;
+    [action: string]: Action<unknown, unknown, unknown>;
 }
-export interface Action {
-    (models: unknown, requestBody: unknown, requestMediaHandler: WritableRepresentation | undefined, requestAuth?: unknown): Promise<unknown> | void;
+export interface Action<ModelsType, ReqBodyType, AuthType> {
+    (models: ModelsType, requestBody: ReqBodyType, requestMediaHandler: WritableRepresentation<ModelsType, ReqBodyType, AuthType> | undefined, requestAuth?: AuthType): Promise<unknown> | void;
 }
 export interface ParsedURLParams {
     [x: string]: string | number;
 }
-export default abstract class Resource {
+export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
     protected actionConfigs: {
         [action: string]: ActionConfig;
     };
-    protected searchSchema: {
-        [x: string]: unknown;
-    };
+    protected searchSchema: SchemaProperties;
     protected requiredSearchProperties?: Array<string>;
-    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string, requestAuth: unknown): unknown;
+    protected abstract modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string, requestAuth: AuthType | null): ModelsType;
     protected actions: ActionList;
     /**
      * Creates an instance of Resource.
@@ -66,7 +65,7 @@ export default abstract class Resource {
      * @param action
      * @param config
      */
-    addAction(name: keyof ActionList, action: Action, config?: ActionConfig): void;
+    addAction(name: keyof ActionList, action: Action<unknown, unknown, unknown>, config?: ActionConfig): void;
     /**
      * Sets the schema of the query parameters this resource accepts
      *
@@ -74,9 +73,7 @@ export default abstract class Resource {
      * @param {array} requiredProperties
      * @todo: json schema type
      */
-    setSearchSchema(schema: {
-        [x: string]: unknown;
-    }, requiredProperties?: Array<string>): void;
+    setSearchSchema(schema: SchemaProperties, requiredProperties?: Array<string>): void;
     /**
      * Performs your API action for a specific HTTP request on this resource
      *
@@ -122,7 +119,7 @@ export default abstract class Resource {
      * @param {array<string>} validSchemes
      * @returns
      */
-    protected getAuth(authorizationHeader: string | Array<string> | undefined, authRequired: boolean, authSchemes: AuthSchemeList): Promise<unknown>;
+    protected getAuth(authorizationHeader: string | Array<string> | undefined, authRequired: boolean, authSchemes: AuthSchemeList<AuthType>): Promise<AuthType | null>;
     /**
      * Returns the proper representation requested by the client via the accept header
      *
@@ -130,7 +127,7 @@ export default abstract class Resource {
      * @param {*} representations
      * @param {*} defaultMediaType
      */
-    protected getResponseMediaHandler(acceptedContentType: string | Array<string> | undefined, representations: ResponseMediaTypeList): ReadableRepresentation;
+    protected getResponseMediaHandler(acceptedContentType: string | Array<string> | undefined, representations: ResponseMediaTypeList<ModelsType, AuthType>): ReadableRepresentation<ModelsType, AuthType>;
     /**
      * Returns the proper representation provided by the client, as defined by it's contentType
      *
@@ -138,12 +135,12 @@ export default abstract class Resource {
      * @param {*} defaultContentType
      * @param {*} representations
      */
-    protected getRequestMediaHandler(contentTypeHeader: string | undefined, defaultContentType: string, representations: RequestMediaTypeList): WritableRepresentation;
+    protected getRequestMediaHandler(contentTypeHeader: string | undefined, defaultContentType: string, representations: RequestMediaTypeList<ModelsType, ReqBodyType, AuthType>): WritableRepresentation<ModelsType, ReqBodyType, AuthType>;
     /**
      * Ensures that the search parameters in the request uri match this resources searchSchema
      * @param {*} searchParams
      */
-    protected validateSearchParams(searchParams: URLSearchParams): Promise<string | Array<string>>;
+    protected validateSearchParams(searchParams: URLSearchParams): Promise<boolean>;
     /**
      * Turns an error into a proper Response object.
      * HTTPErrors use their toResponse method.

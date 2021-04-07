@@ -19,7 +19,7 @@ function fixBody(body: any) {
 }
 
 function ensureInvalidRequest(
-	resource: Resource, method: string, url: URL,
+	resource: Resource<unknown, unknown, unknown>, method: string, url: URL,
 	urlParams: ParsedURLParams | undefined, body: any,
 	headers: {[x: string]: string}, message: string, additionalProblems?: Array<ProblemPayload>) {
 
@@ -29,7 +29,7 @@ function ensureInvalidRequest(
 	}
 
 	return resource.resolve(method, url, urlParams, body, headers)
-		.then((response) => {
+		.then((response: Response) => {
 			expect(response).toEqual({
 				status: 400,
 				body: JSON.stringify({ title: message, status: 400, 'additional-problems': additionalProblems  }),
@@ -39,7 +39,7 @@ function ensureInvalidRequest(
 }
 
 function ensureValidRequest(
-	resource: Resource, method: string,
+	resource: Resource<unknown, unknown, unknown>, method: string,
 	url: URL, urlParams: ParsedURLParams, body: any, headers: {[x: string]: string}, expectedResponse: Response) {
 
 	body = fixBody(body);

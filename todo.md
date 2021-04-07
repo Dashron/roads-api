@@ -1,6 +1,6 @@
 TODO:
--1. Clean up eslint
--1. Add generics to improve the massive use of unknown everywhere. e.g. json representation should be able to have payload, model and auth types. (fix jsonrepresentation generics)
+-1. Improve generics usage. JSONSchema needs all the generics necessary for addAction to be useful. Resource schema needs... nothing? We don't define anything on the resource, it's all on the action.
+0. Investigate executing resolve/set via a custom ajv keyword
 0. Explicit assignment of wildcard default set/resolve functions to specific fields. array of names or something
 0. Can we get addAction's initial type to have some sort of validation? maybe generics? see postCollectionResource's PostCollectionActions type for an example.
 1. Can we pull out roads dependency? It seems to only be for the Response (and some types)

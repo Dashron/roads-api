@@ -12,15 +12,19 @@ import AJV, { _, KeywordCxt, JSONSchemaType, Options, ErrorObject } from 'ajv';
 import { ValidationError, FieldError } from './validationError';
 import { InvalidRequestError, HTTPError } from '../core/httpErrors';
 import { ReadableRepresentation, WritableRepresentation } from './representation';
+import { SomeJSONSchema } from 'ajv/dist/types/json-schema';
 
 interface JsonRepresentationDefaults<ModelsType, AuthType> {
 	set: (models: ModelsType, requestBody: unknown, auth: AuthType, key?: string) => void,
 	resolve: (models: ModelsType, auth: AuthType, key?: string) => unknown
 }
 
+// TODO: I think we can improve this with generics
 interface NestedRequestObject {[x: string]: unknown}
-interface SchemaProperties {[x: string]: JSONSchemaType<unknown>}
-
+interface SchemaProperties {[x: string]: SomeJSONSchema}
+export interface ResolveArrayItems {
+	(models: unknown, auth: unknown): Array<unknown>
+}
 /**
  *
  *
@@ -30,8 +34,7 @@ interface SchemaProperties {[x: string]: JSONSchemaType<unknown>}
 export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthType> implements
 	ReadableRepresentation<ModelsType, AuthType>, WritableRepresentation<ModelsType, ReqBodyType, AuthType> {
 
-	// todo: hmmm... is this right? does the schema type have the item its representing, or the schema format
-	protected schema: JSONSchemaType<ReqBodyType>;
+	protected schema: SomeJSONSchema;
 	protected schemaValidatorOptions: Options;
 	protected defaults?: JsonRepresentationDefaults<ModelsType, AuthType>;
 
@@ -44,7 +47,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * 		Currently this supports a "set" and "resolve" fallback for schemas.
 	 */
 	init (
-		schema: JSONSchemaType<ReqBodyType>, schemaValidatorOptions?: Options,
+		schema: JSONRepresentation<ModelsType, ReqBodyType, AuthType>['schema'], schemaValidatorOptions?: Options,
 		defaults?: JsonRepresentationDefaults<ModelsType, AuthType>): void {
 
 		this.schema = schema;
@@ -65,7 +68,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 *
 	 * @returns {object} The schema passed to the constructor
 	 */
-	getSchema(): JSONSchemaType<ReqBodyType> {
+	getSchema(): JSONRepresentation<ModelsType, ReqBodyType, AuthType>['schema'] {
 		return this.schema;
 	}
 
@@ -99,7 +102,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @returns {*} the JSON representation for the provided models
 	 * @throws {Error} if the schema type is not understood by this library
 	 */
-	protected renderSchema (schema: JSONSchemaType<ReqBodyType>, models: ModelsType, auth: AuthType, key?: string): unknown {
+	protected renderSchema (schema: SomeJSONSchema, models: ModelsType, auth: AuthType, key?: string): unknown {
 		switch (schema.type) {
 			case 'string':
 			case 'number':
@@ -124,7 +127,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 		}
 	}
 
-	protected canBeRendered(schema: JSONSchemaType<unknown>): boolean {
+	protected canBeRendered(schema: SomeJSONSchema): boolean {
 		// we can render strings numbers and missing types if there is a resolve method
 		return ((['string', 'number', 'boolean', undefined].indexOf(schema.type) >= 0) &&
 			(schema.resolve !== undefined || (this.defaults !== undefined && this.defaults.resolve !== undefined))) ||
@@ -199,16 +202,30 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 		const ajv = new AJV(this.schemaValidatorOptions);
 
 		// We want read only fields to be rejected on input, so we add custom validation
-		// TODO: No idea if this works properly
 		ajv.addKeyword({
 			keyword: 'roadsReadOnly',
 			schemaType: 'boolean',
 			code(cxt: KeywordCxt) {
-				const {/* schema, parentSchema, */data} = cxt;
-				// const [min, max] = schema;
-				// const eq: Code = parentSchema.exclusiveRange ? _`=` : nil;
+				const { data } = cxt;
 				cxt.fail(_`${data} != undefined`);
 			} ,
+		});
+
+		// resolve and set are custom keywords we use with jsonrepresentations.
+		// They are ignored by the schema validation, so we always assume they are valid
+		// TODO: Can we use the validate methods here to execute the attached function?
+		//		It would be cool if we could scrap all the traverisng logic and just use
+		//		AJV to automatically run all resolve and set functions.
+		ajv.addKeyword({
+			keyword: 'resolve',
+			schema: false,
+			valid: true
+		});
+
+		ajv.addKeyword({
+			keyword: 'set',
+			schema: false,
+			valid: true
 		});
 
 		const validate = ajv.compile(this.getSchema());
@@ -278,14 +295,14 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	 * @todo schema type is invalid, it can be an array of types. Also it might interact weird with oneOf, allOf, etc.
 	 */
 	protected applyRequest (
-		schema: JSONSchemaType<ReqBodyType>,
+		schema: SomeJSONSchema,
 		requestBody: ReqBodyType, models: ModelsType, auth: AuthType, key?: string): void {
 
 		return this._applyRequest(schema, requestBody, models, auth, key);
 	}
 
 	protected _applyRequest (
-		schema: JSONSchemaType<ReqBodyType> | JSONSchemaType<unknown>,
+		schema: JSONSchemaType<ReqBodyType> | SomeJSONSchema,
 		requestBody: unknown, models: ModelsType, auth: AuthType, key?: string): void {
 
 		if (typeof(requestBody) === 'undefined') {
@@ -333,7 +350,7 @@ export default abstract class JSONRepresentation<ModelsType, ReqBodyType, AuthTy
 	}*/
 
 	// eslint-disable-next-line @typescript-eslint/ban-types
-	protected canBeEdited(schema: JSONSchemaType<unknown>): boolean {
+	protected canBeEdited(schema: SomeJSONSchema): boolean {
 		return ['string', 'number', 'boolean', undefined].includes(schema.type) &&
 			(schema.set !== undefined || (this.defaults !== undefined && this.defaults.set !== undefined)) ||
 			schema.type === 'object';

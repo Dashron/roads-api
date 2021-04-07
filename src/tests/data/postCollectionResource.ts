@@ -11,10 +11,15 @@ import posts, { createPosts } from './blogStorage';
 
 export type PostCollectionActions = 'get' | 'append';
 type PostCollectionModels = {
-	posts: Array<Post>
+	posts: Array<Post>,
+	perPage?: number,
+	page?: number
 };
 
-export default class PostCollectionResource extends Resource<PostCollectionModels, PostReqBody | Post, AuthType> {
+
+export default class PostCollectionResource extends Resource<
+	PostCollectionModels, PostReqBody | Post, AuthType> {
+
 	constructor(label: string) {
 		super();
 
@@ -34,13 +39,13 @@ export default class PostCollectionResource extends Resource<PostCollectionModel
 		});
 
 		this.addAction('append', (models: PostCollectionModels, requestBody: PostReqBody,
-			requestMediaHandler: WritableRepresentation<{posts: Array<Post>}, PostReqBody | Post, AuthType>,
+			requestMediaHandler: WritableRepresentation<Post, PostReqBody, AuthType>,
 			auth: AuthType) => {
 
 			const directPosts = createPosts();
 
-			//ts-ignore ts(2339) We want to ignore this, the point is to fail if it's wrong
-			if (requestBody.whatever) {
+			//Generally you don't want to do this. This is just so the test ensures invalid params don't come through
+			if ((requestBody as any)['whatever']) {
 				// this helps with a test
 				throw new Error('unwanted extra parameter made it through validation.');
 			}
@@ -54,7 +59,7 @@ export default class PostCollectionResource extends Resource<PostCollectionModel
 			models.posts = directPosts;
 		}, {
 			authSchemes: { [AUTH_BEARER]: tokenResolver },
-			requestMediaTypes: { [MEDIA_JSON]: new PostRepresentation('append') },
+			requestMediaTypes: { [MEDIA_JSON_MERGE]: new PostRepresentation('append') },
 			responseMediaTypes: {
 				[MEDIA_JSON]: new CollectionRepresentation('append', new PostRepresentation('append'), (models: any) => {
 					return models.posts;
@@ -85,9 +90,12 @@ export default class PostCollectionResource extends Resource<PostCollectionModel
 	// I don't like this. why doesn't the abstract class know the parameter types?
 	modelsResolver(
 		urlParams: ParsedURLParams | undefined,
-		searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string) {
+		searchParams: URLSearchParams | undefined,
+		action: keyof ActionList, pathname: string): PostCollectionModels {
 
-		const models: {[x: string]: any} = {};
+		const models: PostCollectionModels = {
+			posts: []
+		};
 
 		if (searchParams === undefined || searchParams.get('per_page') === null) {
 			models.perPage = 10;

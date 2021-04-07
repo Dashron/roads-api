@@ -7,11 +7,10 @@
 
 import { URL } from 'url';
 import uriTemplate = require('uri-templates');
-import validateObj from './objectValidator';
+import validateObj, { SchemaProperties } from './objectValidator';
 import { InputValidationError, NotFoundError } from './httpErrors';
 import Resource from '../Resource/resource';
 import { IncomingHeaders, Middleware } from 'roads/types/core/road';
-import { JSONSchemaType } from 'ajv';
 
 /**
  * This is an interesting one. So the uri-templates fromURI function will return an empty string in the following case
@@ -41,19 +40,19 @@ function delEmptyString(obj: {[x: string]: unknown} | undefined) {
 
 interface RouteConfig {
 	urlParams: {
-		schema: JSONSchemaType<unknown>,
+		schema: SchemaProperties,
 		required?: Array<string>
 	}
 }
 
-interface Route<ModelsType, ReqBodyType, AuthType> {
+interface Route {
 	compiledTemplate: uriTemplate.URITemplate,
 	config?: RouteConfig,
-	resource: Resource<ModelsType, ReqBodyType, AuthType>
+	resource: Resource<unknown, unknown, unknown>
 }
 
 export default class Router {
-	protected routes: Array<Route<unknown, unknown, unknown>>;
+	protected routes: Array<Route>;
 
 	constructor () {
 		this.routes = [];
@@ -68,10 +67,10 @@ export default class Router {
 	 * 		with "schema" and "required" properties. These properties are used alongside the standard
 	 * 		objectValidator to validate any URI params.
 	 */
-	addResource<ModelsType, ReqBodyType, AuthType>(
-		template: string, resource: Resource<ModelsType, ReqBodyType, AuthType>, config?: RouteConfig): void {
+	addResource(
+		template: string, resource: Resource<unknown, unknown, unknown>, config?: RouteConfig): void {
 
-		const route: Route<ModelsType, ReqBodyType, AuthType> = {
+		const route: Route = {
 			compiledTemplate: uriTemplate(template),
 			config: config,
 			resource: resource
@@ -100,8 +99,11 @@ export default class Router {
 
 			if (config && config.urlParams) {
 				try {
-					await validateObj(delEmptyString(urlParams), config.urlParams.schema,
-						config.urlParams.required ? config.urlParams.required  : []);
+					if (!await validateObj(delEmptyString(urlParams), config.urlParams.schema,
+						config.urlParams.required ? config.urlParams.required  : [])) {
+
+						continue;
+					}
 				} catch (e) {
 					if (e instanceof InputValidationError) {
 						// If the fields aren't valid, this route isn't a match. We might have another match down the chain.

@@ -8,7 +8,7 @@
 import authParser from './authParser';
 import { parse as parseContentType } from 'content-type';
 import * as Accept from '@hapi/accept';
-import validateObj from '../core/objectValidator';
+import validateObj, { SchemaProperties } from '../core/objectValidator';
 import { Response } from 'roads';
 
 import {
@@ -38,7 +38,6 @@ import {
 
 import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
 import { IncomingHeaders } from 'roads/types/core/road';
-import { JSONSchemaType } from 'ajv';
 
 const globalDefaults: { [action: string]: ActionConfig } = {
 	get: {
@@ -134,7 +133,8 @@ function getSingleHeader(headers: string | Array<string> | undefined): string | 
 
 export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	protected actionConfigs: {[action: string]: ActionConfig}
-	protected searchSchema: JSONSchemaType<unknown>;
+	// TODO: This can be handled better.
+	protected searchSchema: SchemaProperties;
 	protected requiredSearchProperties?: Array<string>;
 	protected abstract modelsResolver(
 		urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined,
@@ -160,7 +160,9 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	 * @param action
 	 * @param config
 	 */
-	addAction (name: keyof ActionList, action: Action<ModelsType, ReqBodyType, AuthType>, config: ActionConfig = {}): void {
+	addAction(name: keyof ActionList, action:
+		Action<unknown, unknown, unknown>, config: ActionConfig = {}): void {
+
 		this.actionConfigs[name] = config;
 		this.actions[name] = action;
 	}
@@ -172,7 +174,7 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 	 * @param {array} requiredProperties
 	 * @todo: json schema type
 	 */
-	setSearchSchema (schema: JSONSchemaType<unknown>, requiredProperties?: Array<string>): void {
+	setSearchSchema (schema: SchemaProperties, requiredProperties?: Array<string>): void {
 		this.searchSchema = schema;
 		this.requiredSearchProperties = requiredProperties;
 	}
@@ -411,19 +413,18 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 			WritableRepresentation<ModelsType, ReqBodyType, AuthType> {
 
 		const parsedContentType = parseContentType(contentTypeHeader || defaultContentType);
-
 		if (parsedContentType.type && representations[parsedContentType.type]) {
 			return representations[parsedContentType.type];
 		}
 
-		throw new UnsupportedMediaTypeError('This media type is not supported on this endpoint.');
+		throw new UnsupportedMediaTypeError(parsedContentType.type);
 	}
 
 	/**
 	 * Ensures that the search parameters in the request uri match this resources searchSchema
 	 * @param {*} searchParams
 	 */
-	protected async validateSearchParams(searchParams: URLSearchParams): Promise<unknown> {
+	protected async validateSearchParams(searchParams: URLSearchParams): Promise<boolean> {
 
 		const params: {[x: string]: string | Array<string>} = {};
 
@@ -446,11 +447,8 @@ export default abstract class Resource<ModelsType, ReqBodyType, AuthType> {
 			return await validateObj(params, this.searchSchema,
 				this.requiredSearchProperties ? this.requiredSearchProperties : []);
 		} catch (e) {
-			if (!(e instanceof InputValidationError)) {
-				throw new InputValidationError('Invalid Search Query', [e.message]);
-			}
-
-			throw e;
+			throw new InputValidationError('Invalid Search Query',
+				(e instanceof InputValidationError) ?  e.fieldErrors : [e.message]);
 		}
 	}
 

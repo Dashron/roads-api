@@ -4,6 +4,7 @@
  * MIT Licensed
  *
  */
+import { ErrorObject } from 'ajv';
 import { Response } from 'roads';
 export interface ProblemPayload {
     title: string;
@@ -53,5 +54,5 @@ export declare class UnprocessableEntityError extends HTTPError {
 }
 export declare class InputValidationError extends InvalidRequestError {
     fieldErrors: Array<string>;
-    constructor(message: string, fieldErrors: Array<string>);
+    constructor(message: string, fieldErrors?: Array<string | ErrorObject>);
 }

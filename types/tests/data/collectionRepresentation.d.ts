@@ -1,4 +1,4 @@
-import JSONRepresentation from "../../Representation/jsonRepresentation";
-export default class CollectionRepresentation extends JSONRepresentation {
-    constructor(action: string, itemRepresentation: JSONRepresentation, resolveArrayItems: Function);
+import JSONRepresentation, { ResolveArrayItems } from '../../Representation/jsonRepresentation';
+export default class CollectionRepresentation<ModelType, ReqBodyType, AuthType> extends JSONRepresentation<ModelType, ReqBodyType, AuthType> {
+    constructor(action: string, itemRepresentation: JSONRepresentation<ModelType, ReqBodyType, AuthType>, resolveArrayItems: ResolveArrayItems);
 }

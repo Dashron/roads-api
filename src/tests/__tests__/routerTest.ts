@@ -191,7 +191,8 @@ describe('router tests', () => {
 
 		return expect(router.locateResource(new URL('http://api.dashron.com/posts/'))).resolves.toEqual({
 			resource: postResource,
-			// We don't want to indicate that an empty string was provided, we want to indicate that the parameter was left out
+			// We don't want to indicate that an empty string was provided, we want to
+			//		indicate that the parameter was left out
 			urlParams: {}
 		});
 	});
@@ -287,5 +288,7 @@ describe('router tests', () => {
 		}), 200, {'content-type': 'application/json'}));
 	});
 
-	// TODO: Write a test like "test middleware responds successfully on resource hit" that tests if one fails, and then tests again if there are two, the first fails, the second succeeds. test for both urls and just url param validation differences.
+	// TODO: Write a test like "test middleware responds successfully on resource hit" that tests if
+	//		one fails, and then tests again if there are two, the first fails, the second succeeds.
+	//		test for both urls and just url param validation differences.
 });

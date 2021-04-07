@@ -7,19 +7,19 @@
 /// <reference types="node" />
 import { URL } from 'url';
 import uriTemplate = require('uri-templates');
+import { SchemaProperties } from './objectValidator';
 import Resource from '../Resource/resource';
 import { Middleware } from 'roads/types/core/road';
-import { JSONSchemaType } from 'ajv';
 interface RouteConfig {
     urlParams: {
-        schema: JSONSchemaType<unknown>;
+        schema: SchemaProperties;
         required?: Array<string>;
     };
 }
 interface Route {
     compiledTemplate: uriTemplate.URITemplate;
     config?: RouteConfig;
-    resource: Resource;
+    resource: Resource<unknown, unknown, unknown>;
 }
 export default class Router {
     protected routes: Array<Route>;
@@ -33,7 +33,7 @@ export default class Router {
      * 		with "schema" and "required" properties. These properties are used alongside the standard
      * 		objectValidator to validate any URI params.
      */
-    addResource(template: string, resource: Resource, config?: RouteConfig): void;
+    addResource(template: string, resource: Resource<unknown, unknown, unknown>, config?: RouteConfig): void;
     /**
      * Attempts to locate a resource for the provided url.
      * @param {string} url - a URL object
@@ -43,7 +43,7 @@ export default class Router {
      * 		urlParams which is an object containing all the url params and values in url.
      */
     locateResource(url: URL): Promise<false | {
-        resource: Resource;
+        resource: Resource<unknown, unknown, unknown>;
         urlParams: {
             [key: string]: string;
         };
