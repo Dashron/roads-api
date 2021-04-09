@@ -8,7 +8,7 @@ export type PostActions = 'get' | 'delete' | 'partialEdit';
 
 const posts = createPosts();
 
-export default class PostResource extends Resource<Post, AuthFormat> {
+export default class PostResource extends Resource<PostFormat, Post, AuthFormat> {
 	protected label: string;
 
 	constructor(label: string) {
@@ -23,6 +23,28 @@ export default class PostResource extends Resource<Post, AuthFormat> {
 			authRequired: true,
 		});
 
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
+		this.addAction('get-noauth', () => {}, {
+			method: 'GETNOAUTH',
+			// Intentionally left out for testing purposes
+			// authSchemes: { [ AUTH_BEARER ]: tokenResolver },
+			responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation('get') },
+			defaultResponseMediaType: MEDIA_JSON,
+			defaultRequestMediaType: MEDIA_JSON,
+			authRequired: true,
+		});
+
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
+		this.addAction('get-noresponse', () => {}, {
+			method: 'GETNORESPONSE',
+			authSchemes: { [ AUTH_BEARER ]: tokenResolver },
+			// Intentionally left out for testing purposes
+			// responseMediaTypes: { [ MEDIA_JSON ]: new PostRepresentation('get') },
+			// defaultResponseMediaType: MEDIA_JSON,
+			defaultRequestMediaType: MEDIA_JSON,
+			authRequired: true,
+		});
+
 		this.addAction('delete', (models) => {
 			models.delete();
 		}, {
@@ -33,7 +55,7 @@ export default class PostResource extends Resource<Post, AuthFormat> {
 			authRequired: true,
 		});
 
-		this.addAction<PostFormat>('partialEdit', (
+		this.addAction('partialEdit', (
 			models,
 			requestBody,
 			RequestMediaHandler,

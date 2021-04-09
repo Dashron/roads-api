@@ -48,7 +48,7 @@ interface RouteConfig {
 interface Route {
 	compiledTemplate: uriTemplate.URITemplate,
 	config?: RouteConfig,
-	resource: Resource<unknown, unknown>
+	resource: Resource<unknown, unknown, unknown>
 }
 
 export default class Router {
@@ -68,7 +68,7 @@ export default class Router {
 	 * 		objectValidator to validate any URI params.
 	 */
 	addResource(
-		template: string, resource: Resource<unknown, unknown>, config?: RouteConfig): void {
+		template: string, resource: Resource<unknown, unknown, unknown>, config?: RouteConfig): void {
 
 		const route: Route = {
 			compiledTemplate: uriTemplate(template),
@@ -88,7 +88,7 @@ export default class Router {
 	 * 		urlParams which is an object containing all the url params and values in url.
 	 */
 	async locateResource(url: URL):
-		Promise<false | { resource: Resource<unknown, unknown>, urlParams: {[key: string]: string}}> {
+		Promise<false | { resource: Resource<unknown, unknown, unknown>, urlParams: {[key: string]: string}}> {
 
 		let urlParams = null;
 

@@ -22,13 +22,13 @@ export interface AuthScheme<Auth> {
 interface AuthSchemeList<Auth> {
     [scheme: string]: AuthScheme<Auth>;
 }
-export interface ActionConfig<RepresentationFormat, Models, Auth> {
+export interface ActionConfig {
     method?: string;
     status?: number;
-    requestMediaTypes?: RequestMediaTypeList<RepresentationFormat, Models, Auth>;
+    requestMediaTypes?: RequestMediaTypeList<unknown, unknown, unknown>;
     allowRequestBody?: boolean;
     defaultResponseMediaType?: string;
-    responseMediaTypes?: ResponseMediaTypeList<Models, Auth>;
+    responseMediaTypes?: ResponseMediaTypeList<unknown, unknown>;
     defaultRequestMediaType?: string;
     authRequired?: boolean;
     authSchemes?: AuthSchemeList<unknown>;
@@ -42,9 +42,9 @@ export interface Action<RepresentationFormat, Models, Auth> {
 export interface ParsedURLParams {
     [x: string]: string | number;
 }
-export default abstract class Resource<Models, Auth> {
+export default abstract class Resource<RepresentationFormat, Models, Auth> {
     protected actionConfigs: {
-        [action: string]: ActionConfig<unknown, unknown, unknown>;
+        [action: string]: ActionConfig;
     };
     protected searchSchema: SchemaProperties;
     protected requiredSearchProperties?: Array<string>;
@@ -65,7 +65,7 @@ export default abstract class Resource<Models, Auth> {
      * @param action
      * @param config
      */
-    addAction<RepresentationFormat>(name: keyof ActionList, action: Action<RepresentationFormat, Models, Auth>, config?: ActionConfig<RepresentationFormat, Models, Auth>): void;
+    addAction(name: keyof ActionList, action: Action<RepresentationFormat, Models, Auth>, config?: ActionConfig): void;
     /**
      * Sets the schema of the query parameters this resource accepts
      *
@@ -102,7 +102,7 @@ export default abstract class Resource<Models, Auth> {
      * @param {string} action
      * @param {string} field
      */
-    protected getActionConfig<K extends keyof ActionConfig<unknown, unknown, unknown>>(action: keyof ActionList, field: K): ActionConfig<unknown, unknown, unknown>[K];
+    protected getActionConfig<K extends keyof ActionConfig>(action: keyof ActionList, field: K): ActionConfig[K];
     /**
      * This will parse the authorization header and send the resulting data
      * into the configured authResolvers.

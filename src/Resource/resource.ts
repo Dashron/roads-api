@@ -39,7 +39,7 @@ import {
 import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
 import { IncomingHeaders } from 'roads/types/core/road';
 
-const globalDefaults: { [action: string]: ActionConfig<unknown, unknown, unknown> } = {
+const globalDefaults: { [action: string]: ActionConfig } = {
 	get: {
 		method: METHOD_GET,
 		status: 200,
@@ -90,13 +90,15 @@ export interface AuthScheme<Auth> {
 
 interface AuthSchemeList<Auth> { [scheme: string]: AuthScheme<Auth> }
 
-export interface ActionConfig<RepresentationFormat, Models, Auth> {
+export interface ActionConfig {
 	method?: string,
 	status?: number,
-	requestMediaTypes?: RequestMediaTypeList<RepresentationFormat, Models, Auth>,
+	// I think we can do better than this
+	requestMediaTypes?: RequestMediaTypeList<unknown, unknown, unknown>,
 	allowRequestBody?: boolean,
 	defaultResponseMediaType?: string,
-	responseMediaTypes?: ResponseMediaTypeList<Models, Auth>,
+	// I think we can do better than this
+	responseMediaTypes?: ResponseMediaTypeList<unknown, unknown>,
 	defaultRequestMediaType?: string,
 	authRequired?: boolean,
 	authSchemes?: AuthSchemeList<unknown>
@@ -127,8 +129,8 @@ function getSingleHeader(headers: string | Array<string> | undefined): string | 
 	return headers;
 }
 
-export default abstract class Resource<Models, Auth> {
-	protected actionConfigs: {[action: string]: ActionConfig<unknown, unknown, unknown>}
+export default abstract class Resource<RepresentationFormat, Models, Auth> {
+	protected actionConfigs: {[action: string]: ActionConfig}
 	// TODO: This can be handled better.
 	protected searchSchema: SchemaProperties;
 	protected requiredSearchProperties?: Array<string>;
@@ -156,10 +158,10 @@ export default abstract class Resource<Models, Auth> {
 	 * @param action
 	 * @param config
 	 */
-	addAction<RepresentationFormat>(
+	addAction(
 		name: keyof ActionList,
 		action: Action<RepresentationFormat, Models, Auth>,
-		config: ActionConfig<RepresentationFormat, Models, Auth> = {}): void {
+		config: ActionConfig = {}): void {
 
 		this.actionConfigs[name] = config;
 		this.actions[name] = action;
@@ -308,15 +310,14 @@ export default abstract class Resource<Models, Auth> {
 	 * @param {string} action
 	 * @param {string} field
 	 */
-	protected getActionConfig<K extends keyof ActionConfig<unknown, unknown, unknown>> (
-		action: keyof ActionList, field: K): ActionConfig<unknown, unknown, unknown>[K] {
-
-		if (typeof(this.actionConfigs[action][field]) !== 'undefined') {
+	protected getActionConfig<K extends keyof ActionConfig> (
+		action: keyof ActionList, field: K): ActionConfig[K] {
+		if (typeof(this.actionConfigs?.[action]?.[field]) !== 'undefined') {
 			return this.actionConfigs[action][field];
 		}
 
 		// roads defaults for global defaults on a per-action basis
-		if (typeof(globalDefaults[action][field]) !== 'undefined') {
+		if (typeof(globalDefaults[action]?.[field]) !== 'undefined') {
 			return globalDefaults[action][field];
 		}
 

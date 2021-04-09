@@ -1,7 +1,4 @@
 TODO:
--1. Fix postCollectionResource after latest generics changes
--1. Write a test for "no auth schemes provided" error in Resource.getAuth
--1. Write a test for "uknown media type" in get request media handler
 -1. Reassess Resource.getAuth returning unknown instead of auth. should we change that? It makes modelsResolver inside of resolve weird too.
 0. Investigate executing resolve/set via a custom ajv keyword
 0. Explicit assignment of wildcard default set/resolve functions to specific fields. array of names or something

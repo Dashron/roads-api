@@ -22,7 +22,7 @@ function fixBody(body: any): string | undefined {
 }
 
 function ensureInvalidRequest (
-	resource: Resource<unknown, unknown> , method: string, url: URL,
+	resource: Resource<unknown, unknown, unknown> , method: string, url: URL,
 	urlParams: ParsedURLParams | undefined, body: unknown,
 	headers: IncomingHeaders | undefined, message: string, additionalProblems: Array<FieldErrorPayload>) {
 
@@ -41,7 +41,7 @@ function ensureInvalidRequest (
 }
 
 function ensureValidRequest (
-	resource: Resource<unknown, unknown> , method: string, url: URL,
+	resource: Resource<unknown, unknown, unknown> , method: string, url: URL,
 	urlParams: ParsedURLParams | undefined, body: unknown | undefined,
 	headers: IncomingHeaders | undefined, expectedResponse: Response) {
 
@@ -72,6 +72,70 @@ describe('blog resource tests', () => {
 				nestingTest: {nestedField: 'nestedValue'}
 			}), 200, {'content-type': 'application/json'})
 		);
+	});
+
+	// TODO: It would be nice if this errored at addAction time, and not execution.
+	test('Test GET Resource execution without properly configured auth', function () {
+		expect.assertions(1);
+
+		return (new PostResource('get-noauth')).resolve(
+			'GETNOAUTH',
+			new URL('/posts/12345', BASE_URL), {
+				post_id: 12345
+			},
+			fixBody(undefined), {
+				authorization: 'Bearer abcde'
+			}
+		).then((response: Response) => {
+			expect(response).toEqual({
+				body: 'Unknown error. Please check your logs',
+				status: 500,
+				headers: {}
+			});
+		});
+	});
+
+	test('Test GET Resource execution without proper auth header', function () {
+		expect.assertions(1);
+
+		return (new PostResource('get')).resolve(
+			'GET',
+			new URL('/posts/12345', BASE_URL), {
+				post_id: 12345
+			},
+			fixBody(undefined),
+			{ }
+		).then((response: Response) => {
+			expect(response).toEqual({
+				body: JSON.stringify({title: 'Authorization required', status: 401, 'additional-problems': []}),
+				status: 401,
+				headers: {
+					'WWW-Authenticate': 'Bearer',
+					'content-type': 'application/json'
+				}
+			});
+		});
+	});
+
+	// TODO: It would be nice if this errored at addAction time, and not execution.
+	test('Test GET Resource execution without properly configured responses', function () {
+		expect.assertions(1);
+
+		return (new PostResource('get-noresponse')).resolve(
+			'GETNORESPONSE',
+			new URL('/posts/12345', BASE_URL), {
+				post_id: 12345
+			},
+			fixBody(undefined), {
+				authorization: 'Bearer abcde'
+			}
+		).then((response: Response) => {
+			expect(response).toEqual({
+				body: 'Unknown error. Please check your logs',
+				status: 500,
+				headers: {}
+			});
+		});
 	});
 
 	test('Test GET Collection Resource execution', function () {
@@ -252,7 +316,7 @@ describe('blog resource tests', () => {
 		})
 			.then((response: Response) => {
 				expect(response).toEqual(new Response(JSON.stringify({
-					title: 'GET, DELETE, PATCH',
+					title: 'GET, GETNOAUTH, GETNORESPONSE, DELETE, PATCH',
 					status: 405,
 					'additional-problems': []
 				}), 405, {'content-type': 'application/json'}));

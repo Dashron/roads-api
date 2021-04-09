@@ -1,8 +1,14 @@
 import { SomeJSONSchema } from 'ajv/dist/types/json-schema';
 import JSONRepresentation, { ResolveArrayItems } from '../../Representation/jsonRepresentation';
 
+export interface Collection<item> {
+	data: Array<item>,
+	perPage: number,
+	page: number
+}
+
 export default class CollectionRepresentation<RepresentationFormat, Model, Auth> extends
-	JSONRepresentation<RepresentationFormat, Model, Auth> {
+	JSONRepresentation<Collection<RepresentationFormat>, Model, Auth> {
 
 	constructor (
 		action: string,
