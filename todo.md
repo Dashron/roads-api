@@ -1,5 +1,4 @@
 TODO:
--1. Reassess Resource.getAuth returning unknown instead of auth. should we change that? It makes modelsResolver inside of resolve weird too.
 0. Investigate executing resolve/set via a custom ajv keyword
 0. Explicit assignment of wildcard default set/resolve functions to specific fields. array of names or something
 0. Can we get addAction's initial type to have some sort of validation? maybe generics? see postCollectionResource's PostCollectionActions type for an example.
