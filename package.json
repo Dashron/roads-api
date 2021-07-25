@@ -2,7 +2,7 @@
   "name": "roads-api",
   "version": "2.0.0",
   "description": "Roads-API is a low effort framework for creating strict REST APIs with JSON Schema.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "types": "types/index.d.ts",
   "scripts": {
     "test": "node node_modules/eslint/bin/eslint.js ./ && tsc && node node_modules/jest/bin/jest.js src/tests/",
@@ -42,5 +42,9 @@
     "request": "2.88.2",
     "ts-jest": "27.0.4",
     "typescript": "^4.3.5"
-  }
+  },
+  "files": [
+    "dist",
+    "types"
+  ]
 }
