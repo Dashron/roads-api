@@ -9,7 +9,7 @@ import { URL } from 'url';
 import uriTemplate = require('uri-templates');
 import { SchemaProperties } from './objectValidator';
 import Resource from '../Resource/resource';
-import { Middleware } from 'roads/types/core/road';
+import { Context, Middleware } from 'roads/types/core/road';
 interface RouteConfig {
     urlParams: {
         schema: SchemaProperties;
@@ -48,6 +48,6 @@ export default class Router {
             [key: string]: string;
         };
     }>;
-    middleware(protocol: string, hostname: string): Middleware;
+    middleware(protocol: string, hostname: string): Middleware<Context>;
 }
 export {};

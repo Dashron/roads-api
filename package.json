@@ -1,6 +1,6 @@
 {
   "name": "roads-api",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0",
   "description": "Roads-API is a low effort framework for creating strict REST APIs with JSON Schema.",
   "main": "index.js",
   "types": "types/index.d.ts",
@@ -20,27 +20,27 @@
   "homepage": "https://github.com/Dashron/roads-api#readme",
   "dependencies": {
     "@hapi/accept": "5.0.2",
-    "ajv": "8.0.0",
+    "ajv": "8.6.2",
     "auth-header": "1.0.0",
     "content-type": "1.0.4",
     "uri-templates": "^0.2.0",
     "@types/uri-templates": "0.1.31"
   },
   "peerDependencies": {
-    "roads": "6.X"
+    "roads": "7.X"
   },
   "devDependencies": {
-    "roads": "6.X",
-    "@types/content-type": "1.1.3",
-    "@types/jest": "^26.0.21",
+    "roads": "7.X",
+    "@types/content-type": "1.1.5",
+    "@types/jest": "^26.0.24",
     "@types/node": "^14.9.0",
-    "jest": "26.6.3",
-    "@typescript-eslint/eslint-plugin": "^4.18.0",
-    "@typescript-eslint/parser": "^4.18.0",
-    "eslint": "^7.22.0",
-    "prettier": "^2.2.1",
+    "jest": "27.0.6",
+    "@typescript-eslint/eslint-plugin": "^4.28.4",
+    "@typescript-eslint/parser": "^4.28.4",
+    "eslint": "^7.31.0",
+    "prettier": "^2.3.2",
     "request": "2.88.2",
-    "ts-jest": "26.5.4",
-    "typescript": "^4.2.3"
+    "ts-jest": "27.0.4",
+    "typescript": "^4.3.5"
   }
 }

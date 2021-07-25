@@ -10,7 +10,8 @@ import uriTemplate = require('uri-templates');
 import validateObj, { SchemaProperties } from './objectValidator';
 import { InputValidationError, NotFoundError } from './httpErrors';
 import Resource from '../Resource/resource';
-import { IncomingHeaders, Middleware } from 'roads/types/core/road';
+import { Context, IncomingHeaders, Middleware } from 'roads/types/core/road';
+import { Response } from 'roads';
 
 /**
  * This is an interesting one. So the uri-templates fromURI function will return an empty string in the following case
@@ -125,10 +126,10 @@ export default class Router {
 		return false;
 	}
 
-	middleware (protocol: string, hostname: string): Middleware {
+	middleware (protocol: string, hostname: string): Middleware<Context> {
 		// eslint-disable-next-line @typescript-eslint/no-this-alias
 		const router = this;
-		const middleware: Middleware = async function (
+		const middleware: Middleware<Context> = async function (
 			requestMethod: string, requestUrl: string, requestBody: string, requestHeaders: IncomingHeaders) {
 
 			const fullRequestUrl = new URL(protocol + hostname + requestUrl);
@@ -140,13 +141,13 @@ export default class Router {
 				// todo: share responses (or maybe all errors) across both projects
 				// todo: maybe this should just return, and let followup middleware handle missed routes?
 				const apiResponse = (new NotFoundError('Not Found')).toResponse();
-				return new this.Response(apiResponse.body, apiResponse.status, apiResponse.headers);
+				return new Response(apiResponse.body, apiResponse.status, apiResponse.headers);
 			}
 
 			const response = await routeResponse.resource.resolve(
 				requestMethod, fullRequestUrl, routeResponse.urlParams, requestBody, requestHeaders);
 
-			return new this.Response(response.body, response.status, response.headers);
+			return new Response(response.body, response.status, response.headers);
 		};
 
 		return middleware;

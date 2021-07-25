@@ -58,8 +58,8 @@ export default class PostCollectionResource extends Resource<PostFormat, Post | 
 				authSchemes: { [AUTH_BEARER]: tokenResolver },
 				requestMediaTypes: { [MEDIA_JSON_MERGE]: new PostRepresentation('append') },
 				responseMediaTypes: {
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 					[MEDIA_JSON]: new CollectionRepresentation('append', new PostRepresentation('append'),
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						(models: any)  => {
 							return models.posts;
 						}

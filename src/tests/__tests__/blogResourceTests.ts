@@ -296,7 +296,7 @@ describe('blog resource tests', () => {
 				authorization: 'Bearer abcde'
 			},
 			'Invalid request body',
-			[{title:'should pass "roadsReadOnly" keyword validation',status:400, 'additional-problems':[], field: '/id'}]
+			[{title:'must pass "roadsReadOnly" keyword validation',status:400, 'additional-problems':[], field: '/id'}]
 		);
 	});
 
@@ -368,7 +368,7 @@ describe('blog resource tests', () => {
 				authorization: 'Bearer abcde'
 			},
 			'Invalid request body',
-			[{title:'should pass "roadsReadOnly" keyword validation',status:400,'additional-problems':[], field: '/id'}]
+			[{title:'must pass "roadsReadOnly" keyword validation',status:400,'additional-problems':[], field: '/id'}]
 		);
 	});
 
