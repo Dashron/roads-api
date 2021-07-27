@@ -88,11 +88,11 @@ export default class PostCollectionResource extends Resource<PostFormat, Post | 
 	}
 
 	// I don't like this. why doesn't the abstract class know the parameter types?
-	modelsResolver(
+	async modelsResolver(
 		urlParams: ParsedURLParams | undefined,
 		searchParams: URLSearchParams | undefined,
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		action: keyof ActionList, pathname: string): PostCollectionModels {
+		action: keyof ActionList, pathname: string): Promise<PostCollectionModels> {
 
 		const models: PostCollectionModels = {
 			posts: []

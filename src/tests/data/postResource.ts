@@ -82,7 +82,7 @@ export default class PostResource extends Resource<PostFormat, Post, AuthFormat>
 		}
 	}
 
-	modelsResolver(urlParams: { 'post_id': number }): Post {
+	async modelsResolver(urlParams: { 'post_id': number }): Promise<Post> {
 		const post = posts[urlParams.post_id];
 
 		if (post) {

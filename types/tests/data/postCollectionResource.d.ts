@@ -11,6 +11,6 @@ declare type PostCollectionModels = {
 };
 export default class PostCollectionResource extends Resource<PostFormat, Post | PostCollectionModels, AuthFormat> {
     constructor(label: string);
-    modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string): PostCollectionModels;
+    modelsResolver(urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined, action: keyof ActionList, pathname: string): Promise<PostCollectionModels>;
 }
 export {};

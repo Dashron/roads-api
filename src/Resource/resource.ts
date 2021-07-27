@@ -136,7 +136,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 	protected requiredSearchProperties?: Array<string>;
 	protected abstract modelsResolver(
 		urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined,
-		action: keyof ActionList, pathname: string, requestAuth: Auth | null): Models;
+		action: keyof ActionList, pathname: string, requestAuth: Auth | null): Promise<Models>;
 
 	protected actions: ActionList = {};
 

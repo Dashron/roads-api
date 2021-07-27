@@ -8,5 +8,5 @@ export default class PostResource extends Resource<PostFormat, Post, AuthFormat>
     constructor(label: string);
     modelsResolver(urlParams: {
         'post_id': number;
-    }): Post;
+    }): Promise<Post>;
 }
