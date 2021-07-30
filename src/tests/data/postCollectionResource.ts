@@ -87,7 +87,7 @@ export default class PostCollectionResource extends Resource<PostFormat, Post | 
 		}, requiredProperties);
 	}
 
-	// I don't like this. why doesn't the abstract class know the parameter types?
+	// TODO: I don't like this. why doesn't the abstract class know the parameter types?
 	async modelsResolver(
 		urlParams: ParsedURLParams | undefined,
 		searchParams: URLSearchParams | undefined,

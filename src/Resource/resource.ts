@@ -39,7 +39,9 @@ import {
 import { WritableRepresentation, ReadableRepresentation } from '../Representation/representation';
 import { IncomingHeaders } from 'roads/types/core/road';
 
-const globalDefaults: { [action: string]: ActionConfig } = {
+// This is fine as an any because this pre-defined config really can be anything
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const globalDefaults: { [action: string]: ActionConfig<any> } = {
 	get: {
 		method: METHOD_GET,
 		status: 200,
@@ -90,7 +92,7 @@ export interface AuthScheme<Auth> {
 
 interface AuthSchemeList<Auth> { [scheme: string]: AuthScheme<Auth> }
 
-export interface ActionConfig {
+export interface ActionConfig<Auth> {
 	method?: string,
 	status?: number,
 	// I think we can do better than this
@@ -101,7 +103,7 @@ export interface ActionConfig {
 	responseMediaTypes?: ResponseMediaTypeList<unknown, unknown>,
 	defaultRequestMediaType?: string,
 	authRequired?: boolean,
-	authSchemes?: AuthSchemeList<unknown>
+	authSchemes?: AuthSchemeList<Auth>
 }
 
 export interface ActionList {
@@ -114,8 +116,8 @@ export interface Action<RepresentationFormat, Models, Auth> {
 		// The model for request media handler is unknown because many different handlers could be applied
 		//		and the end user will know which one they are working with. This could reasonably
 		//		be different from the models parameter
-		requestMediaHandler?: WritableRepresentation<RepresentationFormat, unknown, Auth>,
-		requestAuth?: Auth): Promise<unknown> | void
+		requestMediaHandler: WritableRepresentation<RepresentationFormat, unknown, Auth> | undefined,
+		requestAuth: Auth): Promise<unknown> | void
 }
 
 export interface ParsedURLParams {[x: string]: string | number}
@@ -130,12 +132,14 @@ function getSingleHeader(headers: string | Array<string> | undefined): string | 
 }
 
 export default abstract class Resource<RepresentationFormat, Models, Auth> {
-	protected actionConfigs: {[action: string]: ActionConfig}
+	protected actionConfigs: {[action: string]: ActionConfig<Auth>}
 	// TODO: This can be handled better.
 	protected searchSchema: SchemaProperties;
 	protected requiredSearchProperties?: Array<string>;
 	protected abstract modelsResolver(
 		urlParams: ParsedURLParams | undefined, searchParams: URLSearchParams | undefined,
+		// todo: can we have the auth | null check be aware of the configuration?
+		//	null is only possible if authRequired=true in the action config
 		action: keyof ActionList, pathname: string, requestAuth: Auth | null): Promise<Models>;
 
 	protected actions: ActionList = {};
@@ -161,7 +165,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 	addAction(
 		name: keyof ActionList,
 		action: Action<RepresentationFormat, Models, Auth>,
-		config: ActionConfig = {}): void {
+		config: ActionConfig<Auth> = {}): void {
 
 		this.actionConfigs[name] = config;
 		this.actions[name] = action;
@@ -245,7 +249,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 			 */
 			// TODO: the order of these params are strange. this could use cleanup.
 			const models = await this.modelsResolver(
-				urlParams, urlObject.searchParams, action, urlObject.pathname, requestAuth as (Auth | null));
+				urlParams, urlObject.searchParams, action, urlObject.pathname, requestAuth);
 
 			/*
 			 * Find the appropriate resource representation for this resource, and the client's request
@@ -310,8 +314,8 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 	 * @param {string} action
 	 * @param {string} field
 	 */
-	protected getActionConfig<K extends keyof ActionConfig> (
-		action: keyof ActionList, field: K): ActionConfig[K] {
+	protected getActionConfig<K extends keyof ActionConfig<Auth>> (
+		action: keyof ActionList, field: K): ActionConfig<Auth>[K] {
 		if (typeof(this.actionConfigs?.[action]?.[field]) !== 'undefined') {
 			return this.actionConfigs[action][field];
 		}
@@ -344,7 +348,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 	 */
 	protected async getAuth(
 		authorizationHeader: string | Array<string> | undefined,
-		authRequired?: boolean, authSchemes?: AuthSchemeList<unknown>): Promise<unknown | null> {
+		authRequired?: boolean, authSchemes?: AuthSchemeList<Auth>): Promise<Auth | null> {
 
 		let auth = null;
 		authRequired = authRequired === undefined ? true : authRequired;
@@ -398,7 +402,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 	 */
 	protected getResponseMediaHandler(
 		acceptedContentType: string | Array<string> | undefined,
-		representations?: ResponseMediaTypeList<unknown, unknown> ): ReadableRepresentation<unknown, unknown> {
+		representations?: ResponseMediaTypeList<unknown, Auth> ): ReadableRepresentation<unknown, Auth> {
 
 		// We only work with one response media type, there shouldn't be an array of values here.
 		if (acceptedContentType && representations &&
@@ -420,8 +424,8 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 	protected getRequestMediaHandler(
 		contentTypeHeader?: string,
 		defaultContentType?: string,
-		representations?: RequestMediaTypeList<unknown, unknown, unknown>):
-			WritableRepresentation<unknown, unknown, unknown> {
+		representations?: RequestMediaTypeList<unknown, unknown, Auth>):
+			WritableRepresentation<unknown, unknown, Auth> {
 
 		const contentType = contentTypeHeader || defaultContentType;
 

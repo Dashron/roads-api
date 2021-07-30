@@ -22,7 +22,7 @@ export interface AuthScheme<Auth> {
 interface AuthSchemeList<Auth> {
     [scheme: string]: AuthScheme<Auth>;
 }
-export interface ActionConfig {
+export interface ActionConfig<Auth> {
     method?: string;
     status?: number;
     requestMediaTypes?: RequestMediaTypeList<unknown, unknown, unknown>;
@@ -31,20 +31,20 @@ export interface ActionConfig {
     responseMediaTypes?: ResponseMediaTypeList<unknown, unknown>;
     defaultRequestMediaType?: string;
     authRequired?: boolean;
-    authSchemes?: AuthSchemeList<unknown>;
+    authSchemes?: AuthSchemeList<Auth>;
 }
 export interface ActionList {
     [action: string]: Action<unknown, unknown, unknown>;
 }
 export interface Action<RepresentationFormat, Models, Auth> {
-    (models: Models, requestBody: RepresentationFormat, requestMediaHandler?: WritableRepresentation<RepresentationFormat, unknown, Auth>, requestAuth?: Auth): Promise<unknown> | void;
+    (models: Models, requestBody: RepresentationFormat, requestMediaHandler: WritableRepresentation<RepresentationFormat, unknown, Auth> | undefined, requestAuth: Auth): Promise<unknown> | void;
 }
 export interface ParsedURLParams {
     [x: string]: string | number;
 }
 export default abstract class Resource<RepresentationFormat, Models, Auth> {
     protected actionConfigs: {
-        [action: string]: ActionConfig;
+        [action: string]: ActionConfig<Auth>;
     };
     protected searchSchema: SchemaProperties;
     protected requiredSearchProperties?: Array<string>;
@@ -65,7 +65,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
      * @param action
      * @param config
      */
-    addAction(name: keyof ActionList, action: Action<RepresentationFormat, Models, Auth>, config?: ActionConfig): void;
+    addAction(name: keyof ActionList, action: Action<RepresentationFormat, Models, Auth>, config?: ActionConfig<Auth>): void;
     /**
      * Sets the schema of the query parameters this resource accepts
      *
@@ -102,7 +102,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
      * @param {string} action
      * @param {string} field
      */
-    protected getActionConfig<K extends keyof ActionConfig>(action: keyof ActionList, field: K): ActionConfig[K];
+    protected getActionConfig<K extends keyof ActionConfig<Auth>>(action: keyof ActionList, field: K): ActionConfig<Auth>[K];
     /**
      * This will parse the authorization header and send the resulting data
      * into the configured authResolvers.
@@ -118,7 +118,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
      * @param {array<string>} validSchemes
      * @returns
      */
-    protected getAuth(authorizationHeader: string | Array<string> | undefined, authRequired?: boolean, authSchemes?: AuthSchemeList<unknown>): Promise<unknown | null>;
+    protected getAuth(authorizationHeader: string | Array<string> | undefined, authRequired?: boolean, authSchemes?: AuthSchemeList<Auth>): Promise<Auth | null>;
     /**
      * Returns the proper representation requested by the client via the accept header
      *
@@ -126,7 +126,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
      * @param {*} representations
      * @param {*} defaultMediaType
      */
-    protected getResponseMediaHandler(acceptedContentType: string | Array<string> | undefined, representations?: ResponseMediaTypeList<unknown, unknown>): ReadableRepresentation<unknown, unknown>;
+    protected getResponseMediaHandler(acceptedContentType: string | Array<string> | undefined, representations?: ResponseMediaTypeList<unknown, Auth>): ReadableRepresentation<unknown, Auth>;
     /**
      * Returns the proper representation provided by the client, as defined by it's contentType
      *
@@ -134,7 +134,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
      * @param {*} defaultContentType
      * @param {*} representations
      */
-    protected getRequestMediaHandler(contentTypeHeader?: string, defaultContentType?: string, representations?: RequestMediaTypeList<unknown, unknown, unknown>): WritableRepresentation<unknown, unknown, unknown>;
+    protected getRequestMediaHandler(contentTypeHeader?: string, defaultContentType?: string, representations?: RequestMediaTypeList<unknown, unknown, Auth>): WritableRepresentation<unknown, unknown, Auth>;
     /**
      * Ensures that the search parameters in the request uri match this resources searchSchema
      * @param {*} searchParams
