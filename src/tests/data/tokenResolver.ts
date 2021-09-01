@@ -3,7 +3,7 @@ import { AuthScheme } from '../../Resource/resource';
 export type AuthFormat = true | false | undefined;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const authScheme: AuthScheme<AuthFormat> = (token) => {
+const authScheme: AuthScheme<AuthFormat> = async (token) => {
 	return token ? true : false;
 };
 

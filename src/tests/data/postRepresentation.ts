@@ -71,7 +71,17 @@ export default class PostRepresentation extends
 						}
 					},
 					required: action === 'append' ? ['nestedField'] : []
-				}
+				},
+				writeOnlyTest: {
+					type: 'string',
+					// This is undefined instead of not included to mirror when you might want to
+					//		exclude a specific field in read mode, but keep it for write
+					resolve: undefined,
+					// eslint-disable-next-line @typescript-eslint/no-unused-vars
+					set: (models: Post, writeOnly: string, requestAuth: AuthFormat) => {
+						models.writeOnly = writeOnly;
+					}
+				},
 			},
 			additionalProperties: false,
 			required: action === 'append' ? ['title', 'post', 'nestingTest', 'active'] : []

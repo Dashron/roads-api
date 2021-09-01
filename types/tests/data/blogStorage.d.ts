@@ -3,7 +3,8 @@ export declare class Post {
     title: string;
     post: string;
     active: number;
-    constructor(id?: number, title?: string, post?: string, active?: number);
+    writeOnly: string;
+    constructor(id?: number, title?: string, post?: string, active?: number, writeOnly?: string);
     save(): void;
     delete(): void;
 }

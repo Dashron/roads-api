@@ -128,6 +128,11 @@ export default abstract class JSONRepresentation<RepresentationFormat, Models, A
 	}
 
 	protected canBeRendered(schema: SomeJSONSchema): boolean {
+		// Don't try to render a schema that doesn't exist
+		if (!schema) {
+			return false;
+		}
+
 		// we can render strings numbers and missing types if there is a resolve method
 		return ((['string', 'number', 'boolean', undefined].indexOf(schema.type) >= 0) &&
 			(schema.resolve !== undefined || (this.defaults !== undefined && this.defaults.resolve !== undefined))) ||

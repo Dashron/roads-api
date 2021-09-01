@@ -87,7 +87,7 @@ interface RequestMediaTypeList<RepresentationFormat, Models, Auth> {
 interface ResponseMediaTypeList<Models, Auth> { [type: string]: ReadableRepresentation<Models, Auth> }
 
 export interface AuthScheme<Auth> {
-	(parameters: unknown): Auth
+	(parameters: unknown): Promise<Auth>
 }
 
 interface AuthSchemeList<Auth> { [scheme: string]: AuthScheme<Auth> }
@@ -248,6 +248,7 @@ export default abstract class Resource<RepresentationFormat, Models, Auth> {
 			 * The API developer should assume that they can do whatever they want with provided models
 			 */
 			// TODO: the order of these params are strange. this could use cleanup.
+			// TODO: I found a legit reason to provide the request body to the models resolver. so we should do that.
 			const models = await this.modelsResolver(
 				urlParams, urlObject.searchParams, action, urlObject.pathname, requestAuth);
 

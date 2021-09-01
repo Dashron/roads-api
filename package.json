@@ -1,6 +1,6 @@
 {
   "name": "roads-api",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Roads-API is a low effort framework for creating strict REST APIs with JSON Schema.",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
