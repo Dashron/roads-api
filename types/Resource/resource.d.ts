@@ -17,7 +17,7 @@ interface ResponseMediaTypeList<Models, Auth> {
     [type: string]: ReadableRepresentation<Models, Auth>;
 }
 export interface AuthScheme<Auth> {
-    (parameters: unknown): Auth;
+    (parameters: unknown): Promise<Auth>;
 }
 interface AuthSchemeList<Auth> {
     [scheme: string]: AuthScheme<Auth>;

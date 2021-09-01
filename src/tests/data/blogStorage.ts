@@ -3,8 +3,9 @@ export class Post {
 	title: string;
 	post: string;
 	active: number;
+	writeOnly: string;
 
-	constructor(id?: number, title?: string, post?: string, active = 1) {
+	constructor(id?: number, title?: string, post?: string, active = 1, writeOnly = 'wo') {
 		if (id) {
 			this.id = id;
 		}
@@ -18,6 +19,7 @@ export class Post {
 		}
 
 		this.active = active;
+		this.writeOnly = writeOnly;
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/explicit-module-boundary-types
