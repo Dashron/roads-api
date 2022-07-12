@@ -1,3 +1,5 @@
+# While I am happy with many of the ideas in this project, I'm investigating simpler approaches. More to come in the future.
+
 # The Roads-API framework
 
 Roads-API is a framework for easily building REST APIs.
